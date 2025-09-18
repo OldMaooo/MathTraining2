@@ -198,27 +198,34 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
           // 历史最佳对比（越小越好），改为从 mp-history 计算最小 avgTime
           try {
             const hRaw = localStorage.getItem('mp-history');
-            const list: Array<{ avgTime: number }> = hRaw ? JSON.parse(hRaw) : [];
+            const list: Array<{ avgTime: number; ts?: number; type?: string; timeLimit?: number }> = hRaw ? JSON.parse(hRaw) : [];
             const minHistory = list.length > 0 ? Math.min(...list.map(x => x.avgTime)) : null;
-            const base = minHistory == null ? avg : minHistory;
             setBestAvgTime(minHistory);
-            if (minHistory == null || (Number.isFinite(avg) && avg < minHistory)) {
+
+            // 没有历史时，不显示“破纪录”，只展示本次速度
+            if (minHistory == null) {
+              setBrokeRecord(false);
+              setImproveSeconds(0);
+              setImprovePercent(0);
+            } else if (Number.isFinite(avg) && avg < minHistory) {
               setBrokeRecord(true);
-              const improveSec = Math.max(0, base - avg);
+              const improveSec = Math.max(0, minHistory - avg);
               setImproveSeconds(improveSec);
-              const improvePct = base > 0 ? (improveSec / base) * 100 : 0;
+              const improvePct = minHistory > 0 ? (improveSec / minHistory) * 100 : 0;
               setImprovePercent(improvePct);
             } else {
               setBrokeRecord(false);
               setImproveSeconds(0);
               setImprovePercent(0);
             }
+
+            // 记录当前成绩到历史（确保线上首次访问也能建立历史）
+            list.push({ avgTime: avg, ts: Date.now(), type: localStorage.getItem('questionType') || undefined, timeLimit: Number(localStorage.getItem('timeLimit') || 0) || undefined });
+            localStorage.setItem('mp-history', JSON.stringify(list));
+
             // 同步 mp-best-avg 以兼容旧口径读取位置
-            if (minHistory == null || avg < minHistory) {
-              localStorage.setItem('mp-best-avg', String(avg));
-            } else if (minHistory != null) {
-              localStorage.setItem('mp-best-avg', String(minHistory));
-            }
+            const newBest = list.length > 0 ? Math.min(...list.map(x => x.avgTime)) : avg;
+            localStorage.setItem('mp-best-avg', String(newBest));
           } catch {
             // 失败则保持现状
           }
