@@ -73,7 +73,6 @@ const SpeedChart: React.FC<{
 
   return (
     <div className="w-full max-w-md">
-      <h3 className="text-xl font-semibold text-gray-800 mb-4 text-center">速度对比</h3>
       
       {/* 历史最佳速度 */}
       {bestSpeed !== null && (
@@ -258,57 +257,49 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-start pt-16 p-6">
+      {/* 顶部右侧：历史记录按钮 */}
+      <div className="w-full max-w-6xl flex justify-end mb-4">
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('go-history'))}
+          className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 bg-white/70 hover:bg-white transition shadow-sm"
+        >
+          历史记录
+        </button>
+      </div>
       {/* 标题 */}
-      <div className="text-center mb-6">
-        <h1 className="text-5xl font-extrabold text-gray-900 tracking-tight mb-2">
-          练习完成！
-        </h1>
-        {/* 红色标签与副标题 */}
-        <div className="flex items-center justify-center gap-3 mb-2">
-          <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-red-600 text-lg font-semibold">
-            需要练习
-          </span>
-          <span className="text-base text-gray-500">{questionType} · 每题{timeUsed}秒</span>
-        </div>
+      <div className="text-center mb-8">
+        <h1 className="text-5xl font-extrabold text-gray-900 tracking-tight">练习完成</h1>
       </div>
       
       {/* 主要内容区域 - 左右两组布局 */}
-      <div className="flex flex-col lg:flex-row gap-12 mb-10 items-start justify-center">
-        {/* 左侧组：答题数据和饼图 */}
-        <div className="flex flex-col items-center">
-          <PieChart correct={correctCount} wrong={computedWrong} total={totalQuestions} />
-          {/* 答题数据 */}
-          <div className="grid grid-cols-2 gap-8 mt-4 text-center">
-            <div>
-              <div className="text-4xl font-bold text-green-600 mb-2">
-                {correctCount}
+      {/* 等宽卡片容器，整体约80%宽 */}
+      <div className="w-full max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 mb-10 items-stretch justify-center" style={{ maxWidth: '80%' }}>
+        {/* 左卡：正确率 */}
+        <div className="bg-white/90 rounded-2xl shadow-lg p-6 flex-1">
+          <div className="text-sm font-semibold text-gray-700 mb-4">正确率</div>
+          <div className="flex flex-col items-center">
+            <PieChart correct={correctCount} wrong={computedWrong} total={totalQuestions} />
+            <div className="grid grid-cols-2 gap-8 mt-2 text-center">
+              <div>
+                <div className="text-3xl font-bold text-green-600 mb-1">{correctCount}</div>
+                <div className="text-gray-600">答对题数</div>
               </div>
-              <div className="text-gray-600">答对题数</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-red-600 mb-2">
-                {computedWrong}
+              <div>
+                <div className="text-3xl font-bold text-red-600 mb-1">{computedWrong}</div>
+                <div className="text-gray-600">答错题数</div>
               </div>
-              <div className="text-gray-600">答错题数</div>
             </div>
           </div>
         </div>
 
-        {/* 右侧组：速度对比和本轮用时 */}
-        <div className="flex flex-col items-center">
-          <SpeedChart 
-            currentSpeed={avgTime} 
-            bestSpeed={bestAvgTime} 
-            brokeRecord={brokeRecord} 
-          />
-          {/* 本轮用时 */}
-          <div className="w-full max-w-md mt-4">
-            <h3 className="text-xl font-semibold text-gray-800 mb-3 text-center">本轮用时</h3>
-            <div className="text-center">
-              <div className="text-4xl font-extrabold text-indigo-600 mb-1">
-                {totalTime.toFixed(2)}s
-              </div>
-              <div className="text-gray-600">总用时</div>
+        {/* 右卡：答题速度 + 本轮总用时 */}
+        <div className="bg-white/90 rounded-2xl shadow-lg p-6 flex-1">
+          <div className="text-sm font-semibold text-gray-700 mb-4">答题速度</div>
+          <div className="flex flex-col items-center">
+            <SpeedChart currentSpeed={avgTime} bestSpeed={bestAvgTime} brokeRecord={brokeRecord} />
+            <div className="w-full max-w-md mt-6">
+              <div className="text-xs font-medium text-gray-500 mb-1">本轮总用时</div>
+              <div className="text-3xl font-extrabold text-indigo-600">{totalTime.toFixed(2)}s</div>
             </div>
           </div>
         </div>
@@ -393,13 +384,6 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
         >
           再来一局
         </button>
-        <a
-          href="#"
-          onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('go-history')); }}
-          className="text-gray-700 text-lg font-semibold px-8 py-4 rounded-2xl bg-white/80 hover:bg-white transition shadow"
-        >
-          历史记录
-        </a>
       </div>
     </div>
   );

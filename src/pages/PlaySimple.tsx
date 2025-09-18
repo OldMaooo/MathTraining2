@@ -647,9 +647,9 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       
       {/* 主要内容区域 */}
       <div className="flex-1 flex flex-col items-center justify-center p-8">
-        {/* 题目显示 */}
-        <div className="relative mb-12">
-          <div className={`text-8xl font-bold text-gray-800 mb-4 transition-all duration-300 ${
+        {/* 题目显示（适配窄屏不换行，自动缩放） */}
+        <div className="relative mb-12 max-w-full">
+          <div className={`text-8xl font-bold text-gray-800 mb-4 transition-all duration-300 whitespace-nowrap overflow-hidden text-ellipsis ${
             isWrong ? 'animate-pulse' : ''
           }`}>
             {questions.length > 0 && (() => {
@@ -662,7 +662,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                 return (
                   <>
                     {parts[0]}
-                    <span className={`text-8xl font-bold transition-colors duration-300 ${
+                    <span className={`text-8xl font-bold transition-colors duration-300 align-baseline ${
                       userAnswer ? (isWrong ? 'text-red-500' : 'text-blue-600') : 'text-blue-500'
                     }`}>
                       {userInput}
@@ -675,7 +675,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                 return (
                   <>
                     {question?.displayText}
-                    <span className={`text-8xl font-bold ml-2 transition-colors duration-300 ${
+                    <span className={`text-8xl font-bold ml-2 transition-colors duration-300 align-baseline ${
                       isWrong ? 'text-red-500' : 'text-blue-600'
                     }`}>
                       {userAnswer || '?'}
@@ -694,35 +694,35 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           )}
         </div>
         
-        {/* 数字键盘 */}
-        <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto mb-8">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(num => (
-            <button
-              key={num}
-              onClick={() => setUserAnswer(prev => prev + num.toString())}
-              className="w-16 h-16 text-2xl font-bold rounded-lg bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              {num}
-            </button>
-          ))}
-        </div>
-        
-        {/* 操作按钮 */}
-        <div className="flex gap-4">
-          <button
-            onClick={() => setUserAnswer('')}
-            className="bg-red-500 text-white text-lg font-bold py-3 px-6 rounded-lg hover:bg-red-600 transition-all duration-300 shadow-lg hover:shadow-xl"
-          >
-            清除
-          </button>
-          
-          <button
-            onClick={handleSubmit}
-            disabled={!userAnswer}
-            className="bg-green-500 text-white text-lg font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition-all duration-300 shadow-lg hover:shadow-xl disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            提交
-          </button>
+        {/* 数字键盘：
+            第1行: 1 2 3 删除
+            第2行: 4 5 6 提交(起始)
+            第3行: 7 8 9 提交(同一按钮继续占位)
+            第4行:   0   (在第二列)
+        */}
+        <div className="mt-2">
+          <div className="inline-grid grid-cols-4 grid-rows-4 gap-3">
+            {/* 第一行 */}
+            <button className="w-16 h-16 text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-1 row-start-1" onClick={() => setUserAnswer(prev => prev + '1')}>1</button>
+            <button className="w-16 h-16 text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-2 row-start-1" onClick={() => setUserAnswer(prev => prev + '2')}>2</button>
+            <button className="w-16 h-16 text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-3 row-start-1" onClick={() => setUserAnswer(prev => prev + '3')}>3</button>
+            <button className="w-16 h-16 text-lg font-bold rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition shadow col-start-4 row-start-1" onClick={() => setUserAnswer(prev => prev.slice(0, -1))}>删除</button>
+
+            {/* 第二行 */}
+            <button className="w-16 h-16 text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-1 row-start-2" onClick={() => setUserAnswer(prev => prev + '4')}>4</button>
+            <button className="w-16 h-16 text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-2 row-start-2" onClick={() => setUserAnswer(prev => prev + '5')}>5</button>
+            <button className="w-16 h-16 text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-3 row-start-2" onClick={() => setUserAnswer(prev => prev + '6')}>6</button>
+            {/* 提交按钮占两行 */}
+            <button className="w-16 h-[136px] text-lg font-bold rounded-lg bg-green-500 text-white hover:bg-green-600 transition shadow disabled:bg-gray-400 disabled:cursor-not-allowed col-start-4 row-start-2 row-span-2" onClick={handleSubmit} disabled={!userAnswer}>提交</button>
+
+            {/* 第三行 */}
+            <button className="w-16 h-16 text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-1 row-start-3" onClick={() => setUserAnswer(prev => prev + '7')}>7</button>
+            <button className="w-16 h-16 text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-2 row-start-3" onClick={() => setUserAnswer(prev => prev + '8')}>8</button>
+            <button className="w-16 h-16 text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-3 row-start-3" onClick={() => setUserAnswer(prev => prev + '9')}>9</button>
+
+            {/* 第四行：0 在第二列 */}
+            <button className="w-16 h-16 text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-2 row-start-4" onClick={() => setUserAnswer(prev => prev + '0')}>0</button>
+          </div>
         </div>
       </div>
     </div>
