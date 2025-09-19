@@ -364,6 +364,72 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               };
             }
           }
+        } else if (questionType === 'mixed') {
+          // 加减混合（两步运算：连加、连减、加后减、减后加）
+          const operations = [
+            () => {
+              // 连加：a + b + c
+              const a = Math.floor(Math.random() * Math.min(20, range)) + 1;
+              const b = Math.floor(Math.random() * Math.min(20, range)) + 1;
+              const c = Math.floor(Math.random() * Math.min(20, range)) + 1;
+              const firstResult = a + b;
+              const finalResult = firstResult + c;
+              return { 
+                a: firstResult, 
+                b: c, 
+                operation: '+' as const, 
+                correctAnswer: finalResult, 
+                displayText: `${a} + ${b} + ${c} =` 
+              };
+            },
+            () => {
+              // 连减：a - b - c
+              const a = Math.floor(Math.random() * Math.min(40, range * 2)) + 20;
+              const b = Math.floor(Math.random() * Math.min(20, range)) + 1;
+              const c = Math.floor(Math.random() * Math.min(20, range)) + 1;
+              const firstResult = a - b;
+              const finalResult = firstResult - c;
+              return { 
+                a: firstResult, 
+                b: c, 
+                operation: '-' as const, 
+                correctAnswer: finalResult, 
+                displayText: `${a} - ${b} - ${c} =` 
+              };
+            },
+            () => {
+              // 加后减：(a + b) - c
+              const a = Math.floor(Math.random() * Math.min(20, range)) + 1;
+              const b = Math.floor(Math.random() * Math.min(20, range)) + 1;
+              const c = Math.floor(Math.random() * Math.min(20, range)) + 1;
+              const firstResult = a + b;
+              const finalResult = firstResult - c;
+              return { 
+                a: firstResult, 
+                b: c, 
+                operation: '-' as const, 
+                correctAnswer: finalResult, 
+                displayText: `${a} + ${b} - ${c} =` 
+              };
+            },
+            () => {
+              // 减后加：(a - b) + c
+              const a = Math.floor(Math.random() * Math.min(40, range * 2)) + 20;
+              const b = Math.floor(Math.random() * Math.min(20, range)) + 1;
+              const c = Math.floor(Math.random() * Math.min(20, range)) + 1;
+              const firstResult = a - b;
+              const finalResult = firstResult + c;
+              return { 
+                a: firstResult, 
+                b: c, 
+                operation: '+' as const, 
+                correctAnswer: finalResult, 
+                displayText: `${a} - ${b} + ${c} =` 
+              };
+            }
+          ];
+          const operation = operations[i % operations.length];
+          question = operation();
         } else {
           // 默认混合模式（加减）
           if (i % 2 === 0) {
@@ -649,9 +715,9 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       <div className="flex-1 flex flex-col items-center justify-center p-8">
         {/* 题目显示（适配窄屏不换行，自动缩放） */}
         <div className="relative mb-12 max-w-full">
-          <div className={`text-8xl font-bold text-gray-800 mb-4 transition-all duration-300 whitespace-nowrap overflow-hidden text-ellipsis ${
+          <div className={`text-6xl sm:text-7xl md:text-8xl font-bold text-gray-800 mb-4 transition-all duration-300 whitespace-nowrap ${
             isWrong ? 'animate-pulse' : ''
-          }`}>
+          }`} style={{ fontSize: 'clamp(3rem, 8vw, 6rem)' }}>
             {questions.length > 0 && (() => {
               const question = questions[currentQuestion];
               if (question?.isFillBlank) {
@@ -662,9 +728,9 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                 return (
                   <>
                     {parts[0]}
-                    <span className={`text-8xl font-bold transition-colors duration-300 align-baseline ${
+                    <span className={`font-bold transition-colors duration-300 align-baseline ${
                       userAnswer ? (isWrong ? 'text-red-500' : 'text-blue-600') : 'text-blue-500'
-                    }`}>
+                    }`} style={{ fontSize: 'clamp(3rem, 8vw, 6rem)' }}>
                       {userInput}
                     </span>
                     {parts[1]}
@@ -675,9 +741,9 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                 return (
                   <>
                     {question?.displayText}
-                    <span className={`text-8xl font-bold ml-2 transition-colors duration-300 align-baseline ${
+                    <span className={`font-bold ml-2 transition-colors duration-300 align-baseline ${
                       isWrong ? 'text-red-500' : 'text-blue-600'
-                    }`}>
+                    }`} style={{ fontSize: 'clamp(3rem, 8vw, 6rem)' }}>
                       {userAnswer || '?'}
                     </span>
                   </>

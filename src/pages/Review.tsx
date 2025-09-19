@@ -74,21 +74,21 @@ const SpeedChart: React.FC<{
   return (
     <div className="w-full max-w-md">
       
-      {/* 历史最佳速度 */}
-      {bestSpeed !== null && (
-        <div className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-gray-600">历史最佳</span>
-            <span className="text-sm font-medium text-green-600">{bestSpeed.toFixed(2)}s</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3.5">
-            <div 
-              className="bg-green-500 h-3.5 rounded-full transition-all duration-700 ease-out"
-              style={{ width: `${bestWidth}%` }}
-            />
-          </div>
+      {/* 历史最佳速度 - 始终显示，即使没有历史记录也显示占位 */}
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm text-gray-600">历史最佳</span>
+          <span className="text-sm font-medium text-green-600">
+            {bestSpeed !== null ? `${bestSpeed.toFixed(2)}s` : '暂无记录'}
+          </span>
         </div>
-      )}
+        <div className="w-full bg-gray-200 rounded-full h-3.5">
+          <div 
+            className="bg-green-500 h-3.5 rounded-full transition-all duration-700 ease-out"
+            style={{ width: `${bestWidth}%` }}
+          />
+        </div>
+      </div>
       
       {/* 本次速度 */}
       <div>
@@ -108,7 +108,7 @@ const SpeedChart: React.FC<{
             style={{ width: `${currentWidth}%` }}
           />
         </div>
-        {brokeRecord && (
+        {brokeRecord && bestSpeed !== null && (
           <div className="text-center mt-2">
             <span className="text-xs text-green-600 font-medium">🎉 破纪录！</span>
           </div>
@@ -256,9 +256,9 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-start pt-16 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-start pt-8 p-6">
       {/* 顶部右侧：历史记录按钮 */}
-      <div className="w-full max-w-6xl flex justify-end mb-4">
+      <div className="w-full max-w-6xl flex justify-end mb-2">
         <button
           onClick={() => window.dispatchEvent(new CustomEvent('go-history'))}
           className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 bg-white/70 hover:bg-white transition shadow-sm"
@@ -297,9 +297,11 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
           <div className="text-sm font-semibold text-gray-700 mb-4">答题速度</div>
           <div className="flex flex-col items-center">
             <SpeedChart currentSpeed={avgTime} bestSpeed={bestAvgTime} brokeRecord={brokeRecord} />
-            <div className="w-full max-w-md mt-6">
-              <div className="text-xs font-medium text-gray-500 mb-1">本轮总用时</div>
-              <div className="text-3xl font-extrabold text-indigo-600">{totalTime.toFixed(2)}s</div>
+            <div className="w-full mt-6 pt-4 border-t border-gray-200">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-gray-800 mb-1">{totalTime.toFixed(2)}s</div>
+                <div className="text-gray-600 text-sm">本轮总用时</div>
+              </div>
             </div>
           </div>
         </div>
