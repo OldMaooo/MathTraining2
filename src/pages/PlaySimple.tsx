@@ -712,12 +712,12 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       </div>
       
       {/* 主要内容区域 */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8">
+      <div className="flex-1 flex flex-col items-center justify-center p-2 sm:p-8">
         {/* 题目显示（适配窄屏不换行，自动缩放） */}
-        <div className="relative mb-12 max-w-full">
-          <div className={`text-6xl sm:text-7xl md:text-8xl font-bold text-gray-800 mb-4 transition-all duration-300 whitespace-nowrap ${
+        <div className="relative mb-12 w-full max-w-full px-2">
+          <div className={`font-bold text-gray-800 mb-4 transition-all duration-300 whitespace-nowrap text-center ${
             isWrong ? 'animate-pulse' : ''
-          }`} style={{ fontSize: 'clamp(3rem, 8vw, 6rem)' }}>
+          }`} style={{ fontSize: 'clamp(2rem, 6vw, 4rem)' }}>
             {questions.length > 0 && (() => {
               const question = questions[currentQuestion];
               if (question?.isFillBlank) {
@@ -730,7 +730,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                     {parts[0]}
                     <span className={`font-bold transition-colors duration-300 align-baseline ${
                       userAnswer ? (isWrong ? 'text-red-500' : 'text-blue-600') : 'text-blue-500'
-                    }`} style={{ fontSize: 'clamp(3rem, 8vw, 6rem)' }}>
+                    }`} style={{ fontSize: 'clamp(2rem, 6vw, 4rem)' }}>
                       {userInput}
                     </span>
                     {parts[1]}
@@ -743,7 +743,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                     {question?.displayText}
                     <span className={`font-bold ml-2 transition-colors duration-300 align-baseline ${
                       isWrong ? 'text-red-500' : 'text-blue-600'
-                    }`} style={{ fontSize: 'clamp(3rem, 8vw, 6rem)' }}>
+                    }`} style={{ fontSize: 'clamp(2rem, 6vw, 4rem)' }}>
                       {userAnswer || '?'}
                     </span>
                   </>

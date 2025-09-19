@@ -63,8 +63,8 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
   // const lastSession = sessionHistory[0];
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 max-w-md w-full">
         {/* 标题 */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
@@ -93,91 +93,140 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
         
         {/* 练习设置 */}
         <div className="space-y-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-800">⚙️ 练习设置</h3>
           
           {/* 题目数量 */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">题目数量</label>
-            <div className="flex gap-2 flex-wrap items-center">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <label className="text-lg font-semibold text-gray-800">题目数量</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={config.questionCount}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '') {
+                      handleConfigChange('questionCount', '');
+                    } else {
+                      const num = parseInt(value);
+                      if (!isNaN(num) && num > 0) {
+                        handleConfigChange('questionCount', num);
+                      }
+                    }
+                  }}
+                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-center"
+                  placeholder="10"
+                  min="1"
+                  max="100"
+                />
+                <span className="text-sm text-gray-600">题</span>
+              </div>
+            </div>
+            <div className="flex gap-2 flex-wrap">
               {[5, 10, 20, 30, 50].map(count => (
                 <button
                   key={count}
-                  onClick={() => handleConfigChange('questionCount', count)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    config.questionCount === count
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  onClick={() => {
+                    handleConfigChange('questionCount', count);
+                    // 立即恢复按钮状态
+                    setTimeout(() => {
+                      const button = document.querySelector(`[data-count="${count}"]`) as HTMLButtonElement;
+                      if (button) {
+                        button.blur();
+                      }
+                    }, 100);
+                  }}
+                  data-count={count}
+                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-blue-100 active:text-blue-700"
                 >
                   {count}
                 </button>
               ))}
-              <input
-                type="number"
-                value={config.questionCount}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === '') {
-                    handleConfigChange('questionCount', '');
-                  } else {
-                    const num = parseInt(value);
-                    if (!isNaN(num) && num > 0) {
-                      handleConfigChange('questionCount', num);
-                    }
-                  }
-                }}
-                className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
-                placeholder="自定义"
-                min="1"
-                max="100"
-              />
-              <span className="text-sm text-gray-600">题</span>
             </div>
           </div>
           
           {/* 单题时间 */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">单题时间（秒）</label>
-            <div className="flex gap-2 flex-wrap items-center">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <label className="text-lg font-semibold text-gray-800">单题时间（秒）</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={config.timeLimit}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '') {
+                      handleConfigChange('timeLimit', '');
+                    } else {
+                      const num = parseInt(value);
+                      if (!isNaN(num) && num > 0) {
+                        handleConfigChange('timeLimit', num);
+                      }
+                    }
+                  }}
+                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-center"
+                  placeholder="5"
+                  min="1"
+                  max="60"
+                />
+                <span className="text-sm text-gray-600">秒</span>
+              </div>
+            </div>
+            <div className="flex gap-2 flex-wrap">
               {[2, 3, 5, 10].map(time => (
                 <button
                   key={time}
-                  onClick={() => handleConfigChange('timeLimit', time)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    config.timeLimit === time
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  onClick={() => {
+                    handleConfigChange('timeLimit', time);
+                    // 立即恢复按钮状态
+                    setTimeout(() => {
+                      const button = document.querySelector(`[data-time="${time}"]`) as HTMLButtonElement;
+                      if (button) {
+                        button.blur();
+                      }
+                    }, 100);
+                  }}
+                  data-time={time}
+                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-blue-100 active:text-blue-700"
                 >
                   {time}秒
                 </button>
               ))}
-              <input
-                type="number"
-                value={config.timeLimit}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === '') {
-                    handleConfigChange('timeLimit', '');
-                  } else {
-                    const num = parseInt(value);
-                    if (!isNaN(num) && num > 0) {
-                      handleConfigChange('timeLimit', num);
+            </div>
+            {/* 当前题型最高记录显示 */}
+            <div className="text-sm text-gray-500">
+              {(() => {
+                try {
+                  const historyRaw = localStorage.getItem('mp-history');
+                  if (historyRaw) {
+                    const history = JSON.parse(historyRaw);
+                    const currentTypeRecords = history.filter((record: any) => 
+                      record.type === config.questionType
+                    );
+                    if (currentTypeRecords.length > 0) {
+                      const bestRecord = currentTypeRecords.reduce((min: any, record: any) => 
+                        record.avgTime < min.avgTime ? record : min
+                      );
+                      return (
+                        <span 
+                          className="cursor-pointer hover:text-blue-600 hover:underline"
+                          onClick={() => handleConfigChange('timeLimit', Math.round(bestRecord.avgTime))}
+                        >
+                          当前题型最佳记录：{bestRecord.avgTime.toFixed(2)}秒/题（点击填入）
+                        </span>
+                      );
                     }
                   }
-                }}
-                className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
-                placeholder="自定义"
-                min="1"
-                max="60"
-              />
-              <span className="text-sm text-gray-600">秒</span>
+                  return '暂无该题型记录';
+                } catch {
+                  return '暂无该题型记录';
+                }
+              })()}
             </div>
           </div>
           
           {/* 题型选择 */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">题型选择</label>
+          <div className="space-y-3">
+            <label className="text-lg font-semibold text-gray-800">题型选择</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => handleConfigChange('questionType', 'borrow')}
@@ -272,43 +321,56 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
             </div>
           </div>
           
-          {/* 数值范围 */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">数值范围（每个加数、减数、被减数等的最大值）</label>
-            <div className="flex gap-2 flex-wrap items-center">
+          {/* 运算范围 */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <label className="text-lg font-semibold text-gray-800">运算范围</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={config.range}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '') {
+                      handleConfigChange('range', '');
+                    } else {
+                      const num = parseInt(value);
+                      if (!isNaN(num) && num > 0) {
+                        handleConfigChange('range', num);
+                      }
+                    }
+                  }}
+                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-center"
+                  placeholder="20"
+                  min="1"
+                  max="1000"
+                />
+                <span className="text-sm text-gray-600">以内</span>
+              </div>
+            </div>
+            <div className="flex gap-2 flex-wrap">
               {[20, 50, 100, 1000].map(range => (
                 <button
                   key={range}
-                  onClick={() => handleConfigChange('range', range)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    config.range === range
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  onClick={() => {
+                    handleConfigChange('range', range);
+                    // 立即恢复按钮状态
+                    setTimeout(() => {
+                      const button = document.querySelector(`[data-range="${range}"]`) as HTMLButtonElement;
+                      if (button) {
+                        button.blur();
+                      }
+                    }, 100);
+                  }}
+                  data-range={range}
+                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-blue-100 active:text-blue-700"
                 >
                   {range}
                 </button>
               ))}
-              <input
-                type="number"
-                value={config.range}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === '') {
-                    handleConfigChange('range', '');
-                  } else {
-                    const num = parseInt(value);
-                    if (!isNaN(num) && num > 0) {
-                      handleConfigChange('range', num);
-                    }
-                  }
-                }}
-                className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
-                placeholder="自定义"
-                min="1"
-                max="1000"
-              />
-              <span className="text-sm text-gray-600">以内</span>
+            </div>
+            <div className="text-xs text-gray-500">
+              指每个加数、减数、被减数等的最大值
             </div>
             {(config.questionType === 'multiply' || config.questionType === 'divide' || config.questionType === 'multiply_divide' || config.questionType === 'fill_multiply_divide') && (
               <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">

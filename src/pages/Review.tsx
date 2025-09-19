@@ -256,7 +256,7 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-start pt-8 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-start pt-8 p-2 sm:p-6">
       {/* 顶部右侧：历史记录按钮 */}
       <div className="w-full max-w-6xl flex justify-end mb-2">
         <button
