@@ -113,7 +113,7 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
                       }
                     }
                   }}
-                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-center"
+                  className="w-20 px-2 py-1 border border-gray-300 rounded-lg text-lg font-semibold text-center"
                   placeholder="10"
                   min="1"
                   max="100"
@@ -136,7 +136,7 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
                     }, 100);
                   }}
                   data-count={count}
-                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-blue-100 active:text-blue-700"
+                  className="px-3 py-1 rounded-lg text-sm font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-blue-100 active:text-blue-700"
                 >
                   {count}
                 </button>
@@ -163,7 +163,7 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
                       }
                     }
                   }}
-                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-center"
+                  className="w-20 px-2 py-1 border border-gray-300 rounded-lg text-lg font-semibold text-center"
                   placeholder="5"
                   min="1"
                   max="60"
@@ -186,14 +186,12 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
                     }, 100);
                   }}
                   data-time={time}
-                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-blue-100 active:text-blue-700"
+                  className="px-3 py-1 rounded-lg text-sm font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-blue-100 active:text-blue-700"
                 >
                   {time}秒
                 </button>
               ))}
-            </div>
-            {/* 当前题型最高记录显示 */}
-            <div className="text-sm text-gray-500">
+              {/* 当前题型最高记录作为选项按钮 */}
               {(() => {
                 try {
                   const historyRaw = localStorage.getItem('mp-history');
@@ -207,18 +205,28 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
                         record.avgTime < min.avgTime ? record : min
                       );
                       return (
-                        <span 
-                          className="cursor-pointer hover:text-blue-600 hover:underline"
-                          onClick={() => handleConfigChange('timeLimit', Math.round(bestRecord.avgTime))}
+                        <button
+                          onClick={() => {
+                            handleConfigChange('timeLimit', Math.round(bestRecord.avgTime));
+                            // 立即恢复按钮状态
+                            setTimeout(() => {
+                              const button = document.querySelector(`[data-record]`) as HTMLButtonElement;
+                              if (button) {
+                                button.blur();
+                              }
+                            }, 100);
+                          }}
+                          data-record
+                          className="px-3 py-1 rounded-lg text-sm font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-blue-100 active:text-blue-700"
                         >
-                          当前题型最佳记录：{bestRecord.avgTime.toFixed(2)}秒/题（点击填入）
-                        </span>
+                          {bestRecord.avgTime.toFixed(2)}秒（纪录）
+                        </button>
                       );
                     }
                   }
-                  return '暂无该题型记录';
+                  return null;
                 } catch {
-                  return '暂无该题型记录';
+                  return null;
                 }
               })()}
             </div>
@@ -228,6 +236,7 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
           <div className="space-y-3">
             <label className="text-lg font-semibold text-gray-800">题型选择</label>
             <div className="grid grid-cols-2 gap-2">
+              {/* 加减相关 */}
               <button
                 onClick={() => handleConfigChange('questionType', 'borrow')}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -259,6 +268,17 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
                 加减混合
               </button>
               <button
+                onClick={() => handleConfigChange('questionType', 'fill_add_subtract')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  config.questionType === 'fill_add_subtract'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                加减法填空
+              </button>
+              {/* 乘除相关 */}
+              <button
                 onClick={() => handleConfigChange('questionType', 'multiply')}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                   config.questionType === 'multiply'
@@ -289,26 +309,6 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
                 乘除混合
               </button>
               <button
-                onClick={() => handleConfigChange('questionType', 'all_four')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  config.questionType === 'all_four'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                四则混合
-              </button>
-              <button
-                onClick={() => handleConfigChange('questionType', 'fill_add_subtract')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  config.questionType === 'fill_add_subtract'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                加减法填空
-              </button>
-              <button
                 onClick={() => handleConfigChange('questionType', 'fill_multiply_divide')}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                   config.questionType === 'fill_multiply_divide'
@@ -317,6 +317,17 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
                 }`}
               >
                 乘除法填空
+              </button>
+              {/* 四则混合 */}
+              <button
+                onClick={() => handleConfigChange('questionType', 'all_four')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all col-span-2 ${
+                  config.questionType === 'all_four'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                四则混合
               </button>
             </div>
           </div>
@@ -340,7 +351,7 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
                       }
                     }
                   }}
-                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-center"
+                  className="w-20 px-2 py-1 border border-gray-300 rounded-lg text-lg font-semibold text-center"
                   placeholder="20"
                   min="1"
                   max="1000"
@@ -363,7 +374,7 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
                     }, 100);
                   }}
                   data-range={range}
-                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-blue-100 active:text-blue-700"
+                  className="px-3 py-1 rounded-lg text-sm font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-blue-100 active:text-blue-700"
                 >
                   {range}
                 </button>
