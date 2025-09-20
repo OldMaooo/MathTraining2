@@ -332,7 +332,8 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
             </div>
           </div>
           
-          {/* 运算范围 */}
+          {/* 运算范围 - 乘除相关题型时隐藏 */}
+          {!['multiply', 'divide', 'multiply_divide', 'fill_multiply_divide'].includes(config.questionType) && (
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <label className="text-lg font-semibold text-gray-800">运算范围</label>
@@ -383,12 +384,8 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
             <div className="text-xs text-gray-500">
               指每个加数、减数、被减数等的最大值
             </div>
-            {(config.questionType === 'multiply' || config.questionType === 'divide' || config.questionType === 'multiply_divide' || config.questionType === 'fill_multiply_divide') && (
-              <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
-                💡 乘法和除法题型将使用九九乘法表范围（2-9），填空题也遵循此规则
-              </div>
-            )}
           </div>
+          )}
         </div>
         
              {/* 按钮组 */}

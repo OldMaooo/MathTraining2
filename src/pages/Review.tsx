@@ -199,7 +199,10 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
           try {
             const hRaw = localStorage.getItem('mp-history');
             const list: Array<{ avgTime: number; ts?: number; type?: string; timeLimit?: number }> = hRaw ? JSON.parse(hRaw) : [];
-            const minHistory = list.length > 0 ? Math.min(...list.map(x => x.avgTime)) : null;
+            const currentType = localStorage.getItem('questionType');
+            // 只计算当前题型的历史最佳成绩
+            const currentTypeRecords = list.filter(record => record.type === currentType);
+            const minHistory = currentTypeRecords.length > 0 ? Math.min(...currentTypeRecords.map(x => x.avgTime)) : null;
             setBestAvgTime(minHistory);
 
             // 没有历史时，不显示“破纪录”，只展示本次速度

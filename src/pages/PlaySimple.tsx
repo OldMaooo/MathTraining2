@@ -98,6 +98,8 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
   const [perQuestionTimes, setPerQuestionTimes] = useState<number[]>([]);
   const [questionType, setQuestionType] = useState('退位减法');
   const [isPaused, setIsPaused] = useState(false);
+  const [pauseStartTime, setPauseStartTime] = useState<number | null>(null); // 暂停开始时间
+  const [totalPauseTime, setTotalPauseTime] = useState(0); // 总暂停时间
   const [questionLogs, setQuestionLogs] = useState<Array<{
     a: number;
     b: number;
@@ -348,7 +350,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                 a: product, // 被除数
                 b: b, // 除数
                 operation: '÷', 
-                correctAnswer: a, // 商
+                correctAnswer: product, // 被除数
                 displayText: `? ÷ ${b} = ${a}`,
                 isFillBlank: true,
                 blankPosition: 'a'
@@ -471,7 +473,20 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       if (e.key === 'p' || e.key === 'P') {
         // P键：暂停/继续
         e.preventDefault();
-        setIsPaused(prev => !prev);
+        setIsPaused(prev => {
+          const newPaused = !prev;
+          if (newPaused) {
+            // 开始暂停
+            setPauseStartTime(Date.now());
+          } else {
+            // 结束暂停，累计暂停时间
+            if (pauseStartTime) {
+              setTotalPauseTime(prev => prev + (Date.now() - pauseStartTime));
+              setPauseStartTime(null);
+            }
+          }
+          return newPaused;
+        });
         return;
       }
       
@@ -482,13 +497,18 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
         setUserAnswer(prev => prev.slice(0, -1));
         setIsWrong(false);
       } else if (e.key === 'Enter' || e.key === ' ') {
+        // 阻止默认行为，避免空格键触发其他元素
+        e.preventDefault();
         // 直接在这里处理提交逻辑，避免循环依赖
         if (!userAnswer || questions.length === 0 || !questions[currentQuestion]) return;
         
         const answer = parseInt(userAnswer);
         const isCorrect = answer === questions[currentQuestion].correctAnswer;
         const now = Date.now();
-        const durationSec = Math.max(0, Math.round((now - lastStartTime) / 1000));
+        // 计算实际答题时间，减去暂停时间
+        const currentPauseTime = pauseStartTime ? (now - pauseStartTime) : 0;
+        const totalCurrentPauseTime = totalPauseTime + currentPauseTime;
+        const durationSec = Math.max(0, Math.round((now - lastStartTime - totalCurrentPauseTime) / 1000));
         const nextAnswered = answeredQuestions + 1;
         const nextTimes = [...perQuestionTimes, durationSec];
         setPerQuestionTimes(nextTimes);
@@ -630,7 +650,10 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     const answer = parseInt(userAnswer);
     const isCorrect = answer === questions[currentQuestion].correctAnswer;
     const now = Date.now();
-    const durationSec = Math.max(0, Math.round((now - lastStartTime) / 1000));
+    // 计算实际答题时间，减去暂停时间
+    const currentPauseTime = pauseStartTime ? (now - pauseStartTime) : 0;
+    const totalCurrentPauseTime = totalPauseTime + currentPauseTime;
+    const durationSec = Math.max(0, Math.round((now - lastStartTime - totalCurrentPauseTime) / 1000));
     const nextAnswered = answeredQuestions + 1;
     const nextTimes = [...perQuestionTimes, durationSec];
     setPerQuestionTimes(nextTimes);
@@ -783,25 +806,25 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       <div className="w-full sm:max-w-sm sm:mx-auto sm:px-0 sm:mt-8">
         <div className="grid grid-cols-4 grid-rows-4 gap-0.5 sm:gap-3">
           {/* 第一行 */}
-          <button className="aspect-square text-2xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-1 row-start-1" onClick={() => setUserAnswer(prev => prev + '1')}>1</button>
-          <button className="aspect-square text-2xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-2 row-start-1" onClick={() => setUserAnswer(prev => prev + '2')}>2</button>
-          <button className="aspect-square text-2xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-3 row-start-1" onClick={() => setUserAnswer(prev => prev + '3')}>3</button>
+          <button className="aspect-square text-4xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-1 row-start-1" onClick={() => setUserAnswer(prev => prev + '1')}>1</button>
+          <button className="aspect-square text-4xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-2 row-start-1" onClick={() => setUserAnswer(prev => prev + '2')}>2</button>
+          <button className="aspect-square text-4xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-3 row-start-1" onClick={() => setUserAnswer(prev => prev + '3')}>3</button>
           <button className="aspect-square text-sm sm:text-lg font-bold rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition shadow col-start-4 row-start-1" onClick={() => setUserAnswer(prev => prev.slice(0, -1))}>删除</button>
 
           {/* 第二行 */}
-          <button className="aspect-square text-2xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-1 row-start-2" onClick={() => setUserAnswer(prev => prev + '4')}>4</button>
-          <button className="aspect-square text-2xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-2 row-start-2" onClick={() => setUserAnswer(prev => prev + '5')}>5</button>
-          <button className="aspect-square text-2xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-3 row-start-2" onClick={() => setUserAnswer(prev => prev + '6')}>6</button>
+          <button className="aspect-square text-4xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-1 row-start-2" onClick={() => setUserAnswer(prev => prev + '4')}>4</button>
+          <button className="aspect-square text-4xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-2 row-start-2" onClick={() => setUserAnswer(prev => prev + '5')}>5</button>
+          <button className="aspect-square text-4xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-3 row-start-2" onClick={() => setUserAnswer(prev => prev + '6')}>6</button>
           {/* 提交按钮占两行 */}
           <button className="text-sm sm:text-lg font-bold rounded-lg bg-green-500 text-white hover:bg-green-600 transition shadow disabled:bg-gray-400 disabled:cursor-not-allowed col-start-4 row-start-2 row-span-2" onClick={handleSubmit} disabled={!userAnswer}>提交</button>
 
           {/* 第三行 */}
-          <button className="aspect-square text-2xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-1 row-start-3" onClick={() => setUserAnswer(prev => prev + '7')}>7</button>
-          <button className="aspect-square text-2xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-2 row-start-3" onClick={() => setUserAnswer(prev => prev + '8')}>8</button>
-          <button className="aspect-square text-2xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-3 row-start-3" onClick={() => setUserAnswer(prev => prev + '9')}>9</button>
+          <button className="aspect-square text-4xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-1 row-start-3" onClick={() => setUserAnswer(prev => prev + '7')}>7</button>
+          <button className="aspect-square text-4xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-2 row-start-3" onClick={() => setUserAnswer(prev => prev + '8')}>8</button>
+          <button className="aspect-square text-4xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-3 row-start-3" onClick={() => setUserAnswer(prev => prev + '9')}>9</button>
 
           {/* 第四行：0 在第二列 */}
-          <button className="aspect-square text-2xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-2 row-start-4" onClick={() => setUserAnswer(prev => prev + '0')}>0</button>
+          <button className="aspect-square text-4xl sm:text-2xl font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-2 row-start-4" onClick={() => setUserAnswer(prev => prev + '0')}>0</button>
         </div>
       </div>
     </div>
