@@ -63,24 +63,24 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
   // const lastSession = sessionHistory[0];
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col p-2 sm:p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4">
       {/* 顶部标题栏 */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold text-gray-800">
           🧮 计算挑战赛
-          </h1>
+        </h1>
         <button
           onClick={onHistory}
           className="text-2xl hover:text-gray-600 transition-colors"
           title="历史记录"
         >
-          📊
+          ⏰
         </button>
-        </div>
+      </div>
       
       {/* 主要内容区域 */}
-      <div className="flex-1 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 max-w-md w-full">
+      <div className="flex justify-center mb-24">
+        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 max-w-md w-full relative">
         
         {/* 个人最佳成绩 - 暂时隐藏 */}
         {/* <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 mb-6">
@@ -396,38 +396,36 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
             </div>
           </div>
           )}
-        </div>
-        </div>
-      </div>
-      
-      {/* 底部按钮区域 - 固定位置 */}
-      <div className="w-full max-w-md mx-auto">
-        <div className="space-y-4">
-          <button
-            onClick={handleStart}
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xl font-bold py-4 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-          >
-            🚀 开始练习
-          </button>
-          {hasWrongSet && (
-            <button
-              onClick={() => {
-                // 使用最近的错题题集启动
-                localStorage.setItem('mp-start-with-wrong-set', '1');
-                try {
-                  const latest = localStorage.getItem('mp-latest-wrong-set');
-                  const arr = latest ? JSON.parse(latest) : [];
-                  if (Array.isArray(arr)) {
-                    localStorage.setItem('questionCount', String(arr.length));
-                  }
-                } catch {}
-                onStart();
-              }}
-              className="w-full bg-gradient-to-r from-rose-500 to-pink-600 text-white text-lg font-bold py-3 rounded-xl hover:from-rose-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-            >
-              错题练习（使用最近生成）
-            </button>
-          )}
+          {/* 底部按钮区域 - 固定在白色框内底部 */}
+          <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 bg-white rounded-b-2xl">
+            <div className="space-y-4">
+              <button
+                onClick={handleStart}
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xl font-bold py-4 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              >
+                🚀 开始练习
+              </button>
+              {hasWrongSet && (
+                <button
+                  onClick={() => {
+                    // 使用最近的错题题集启动
+                    localStorage.setItem('mp-start-with-wrong-set', '1');
+                    try {
+                      const latest = localStorage.getItem('mp-latest-wrong-set');
+                      const arr = latest ? JSON.parse(latest) : [];
+                      if (Array.isArray(arr)) {
+                        localStorage.setItem('questionCount', String(arr.length));
+                      }
+                    } catch {}
+                    onStart();
+                  }}
+                  className="w-full bg-gradient-to-r from-rose-500 to-pink-600 text-white text-lg font-bold py-3 rounded-xl hover:from-rose-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                >
+                  错题练习（使用最近生成）
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
       <button

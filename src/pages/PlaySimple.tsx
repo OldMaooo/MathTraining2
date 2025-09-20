@@ -477,13 +477,18 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           const newPaused = !prev;
           if (newPaused) {
             // 开始暂停
-            setPauseStartTime(Date.now());
+            const now = Date.now();
+            setPauseStartTime(now);
           } else {
             // 结束暂停，累计暂停时间
-            if (pauseStartTime) {
-              setTotalPauseTime(prev => prev + (Date.now() - pauseStartTime));
-              setPauseStartTime(null);
-            }
+            setPauseStartTime(prevPauseStart => {
+              if (prevPauseStart) {
+                const now = Date.now();
+                setTotalPauseTime(prev => prev + (now - prevPauseStart));
+                return null;
+              }
+              return prevPauseStart;
+            });
           }
           return newPaused;
         });
@@ -655,10 +660,14 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
   // 处理数字输入，如果暂停则自动继续
   const handleNumberInput = (digit: string) => {
     if (isPaused) {
-      if (pauseStartTime) {
-        setTotalPauseTime(prev => prev + (Date.now() - pauseStartTime));
-        setPauseStartTime(null);
-      }
+      setPauseStartTime(prevPauseStart => {
+        if (prevPauseStart) {
+          const now = Date.now();
+          setTotalPauseTime(prev => prev + (now - prevPauseStart));
+          return null;
+        }
+        return prevPauseStart;
+      });
       setIsPaused(false);
     }
     setUserAnswer(prev => prev + digit);
