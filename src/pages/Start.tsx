@@ -428,9 +428,10 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
           </div>
         </div>
       </div>
+      
       <button
         onClick={() => {
-          const input = window.prompt('为了防止误操作，请输入 “清除记录” 以确认删除统计与纪录数据：');
+          const input = window.prompt('为了防止误操作，请输入 "清除记录" 以确认删除统计与纪录数据：');
           if (input === '清除记录') {
             const keys = [
               'math-practice-correct',
