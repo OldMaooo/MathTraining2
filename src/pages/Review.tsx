@@ -132,6 +132,21 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
   const [improveSeconds, setImproveSeconds] = useState<number>(0);
   const [improvePercent, setImprovePercent] = useState<number>(0);
   const [totalTime, setTotalTime] = useState<number>(0);
+  const [showQuestionAnalysis, setShowQuestionAnalysis] = useState(false);
+  const [questionLogs, setQuestionLogs] = useState<Array<{
+    a: number;
+    b: number;
+    operation: '+' | '-' | '×' | '÷';
+    correctAnswer: number;
+    userAnswer: number;
+    isCorrect: boolean;
+    timeTaken: number;
+    displayText: string;
+    isFillBlank?: boolean;
+    blankPosition?: 'a' | 'b' | 'result';
+  }>>([]);
+  const [sortField, setSortField] = useState<string>('question');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   
   useEffect(() => {
     // 从localStorage获取成绩和配置
@@ -229,16 +244,68 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
             // 同步 mp-best-avg 以兼容旧口径读取位置
             const newBest = list.length > 0 ? Math.min(...list.map(x => x.avgTime)) : avg;
             localStorage.setItem('mp-best-avg', String(newBest));
-          } catch {
-            // 失败则保持现状
+          } catch (e) {
+            console.error("Error processing history:", e);
           }
         }
-      } catch {
-        // ignore JSON errors
+      } catch (e) {
+        console.error("Error processing history:", e);
       }
     }
   }, []);
-  
+
+  // 加载题目日志
+  useEffect(() => {
+    try {
+      const logsData = localStorage.getItem('mp-question-logs');
+      if (logsData) {
+        const logs = JSON.parse(logsData);
+        setQuestionLogs(logs);
+      }
+    } catch (error) {
+      console.error('加载题目日志失败:', error);
+    }
+  }, []);
+
+  // 排序题目日志
+  const sortedQuestionLogs = [...questionLogs].sort((a, b) => {
+    let aValue: any, bValue: any;
+    
+    switch (sortField) {
+      case 'question':
+        aValue = a.displayText;
+        bValue = b.displayText;
+        break;
+      case 'correct':
+        aValue = a.isCorrect ? 1 : 0;
+        bValue = b.isCorrect ? 1 : 0;
+        break;
+      case 'time':
+        aValue = a.timeTaken;
+        bValue = b.timeTaken;
+        break;
+      case 'operation':
+        aValue = a.operation;
+        bValue = b.operation;
+        break;
+      default:
+        return 0;
+    }
+    
+    if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
   const accuracy = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
   const computedWrong = Math.max(0, totalQuestions - correctCount);
   
@@ -260,15 +327,20 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-start pt-8 p-2 sm:p-6">
-      {/* 顶部右侧：历史记录按钮 */}
-      <div className="w-full max-w-6xl flex justify-end mb-2">
-        <button
-          onClick={() => window.dispatchEvent(new CustomEvent('go-history'))}
-          className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 bg-white/70 hover:bg-white transition shadow-sm"
-        >
-          历史记录
-        </button>
-      </div>
+              {/* 顶部右侧：按钮组 */}
+              <div className="w-full max-w-6xl flex justify-between items-center mb-2">
+                <div className="text-lg font-semibold text-gray-700">
+                  {questionType}
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => window.dispatchEvent(new CustomEvent('go-history'))}
+                    className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 bg-white/70 hover:bg-white transition shadow-sm"
+                  >
+                    历史记录
+                  </button>
+                </div>
+              </div>
       {/* 标题 */}
       <div className="text-center mb-8">
         <h1 className="text-5xl font-extrabold text-gray-900 tracking-tight">练习完成</h1>
@@ -283,11 +355,19 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
           <div className="flex flex-col items-center">
             <PieChart correct={correctCount} wrong={computedWrong} total={totalQuestions} />
             <div className="grid grid-cols-2 gap-8 mt-2 text-center">
-              <div>
+              <div 
+                className="cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors"
+                onClick={() => setShowQuestionAnalysis(true)}
+                title="点击查看错题分析"
+              >
                 <div className="text-3xl font-bold text-green-600 mb-1">{correctCount}</div>
                 <div className="text-gray-600">答对题数</div>
               </div>
-              <div>
+              <div 
+                className="cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors"
+                onClick={() => setShowQuestionAnalysis(true)}
+                title="点击查看错题分析"
+              >
                 <div className="text-3xl font-bold text-red-600 mb-1">{computedWrong}</div>
                 <div className="text-gray-600">答错题数</div>
               </div>
@@ -381,15 +461,96 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
         </details>
       </div> */}
       
-      {/* 操作按钮 */}
-      <div className="flex gap-4">
-        <button
-          onClick={onRestart}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xl font-bold py-4 px-10 rounded-2xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-        >
-          再来一局
-        </button>
-      </div>
-    </div>
-  );
-};
+              {/* 操作按钮 */}
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    onRestart();
+                  }}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xl font-bold py-4 px-10 rounded-2xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                >
+                  再来一局
+                </button>
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('go-home'))}
+                  className="bg-gradient-to-r from-gray-500 to-gray-600 text-white text-xl font-bold py-4 px-10 rounded-2xl hover:from-gray-600 hover:to-gray-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                >
+                  回首页
+                </button>
+              </div>
+
+              {/* 题目分析浮层 */}
+              {showQuestionAnalysis && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[80vh] overflow-hidden">
+                    <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                      <h2 className="text-2xl font-bold text-gray-800">题目分析</h2>
+                      <button
+                        onClick={() => setShowQuestionAnalysis(false)}
+                        className="text-gray-500 hover:text-gray-700 text-2xl"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div className="p-6 overflow-auto max-h-[60vh]">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-gray-50">
+                            <th 
+                              className="px-4 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100"
+                              onClick={() => handleSort('question')}
+                            >
+                              题目 {sortField === 'question' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th 
+                              className="px-4 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100"
+                              onClick={() => handleSort('correct')}
+                            >
+                              对错 {sortField === 'correct' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th 
+                              className="px-4 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100"
+                              onClick={() => handleSort('time')}
+                            >
+                              用时(秒) {sortField === 'time' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sortedQuestionLogs.map((log, index) => (
+                            <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                              <td className="px-4 py-3 text-sm text-gray-800">
+                                {log.isCorrect ? (
+                                  <span>
+                                    <span className="text-gray-800">{log.displayText.replace('?', '')}</span>
+                                    <span className="text-green-600 font-semibold">{log.correctAnswer}</span>
+                                  </span>
+                                ) : (
+                                  <span>
+                                    <span className="text-gray-800">{log.displayText.replace('?', '')}</span>
+                                    <span className="text-green-600 font-semibold">{log.correctAnswer}</span>
+                                    <span className="text-red-600"> （{log.userAnswer}）</span>
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  log.isCorrect 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {log.isCorrect ? '✓' : '✗'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600">{log.timeTaken.toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        };

@@ -4,9 +4,10 @@ interface StartProps {
   onStart: () => void;
   onTest: () => void;
   onHistory: () => void;
+  onWrongQuestions: () => void;
 }
 
-export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
+export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory, onWrongQuestions }) => {
   const [config, setConfig] = useState({
     questionType: 'borrow', // 'borrow' | 'carry' | 'mixed' | 'multiply' | 'divide' | 'multiply_divide' | 'all_four' | 'fill_add_subtract' | 'fill_multiply_divide'
     range: 20,
@@ -14,6 +15,7 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
     timeLimit: 5 // 默认5秒单题时间
   });
   const [hasWrongSet, setHasWrongSet] = useState(false);
+  const [isTestMode, setIsTestMode] = useState(false);
 
   // 从localStorage加载上次的设置
   useEffect(() => {
@@ -21,6 +23,7 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
     const savedRange = localStorage.getItem('range');
     const savedQuestionCount = localStorage.getItem('questionCount');
     const savedTimeLimit = localStorage.getItem('timeLimit');
+    const savedTestMode = localStorage.getItem('isTestMode');
 
     if (savedQuestionType) {
       setConfig(prev => ({ ...prev, questionType: savedQuestionType as 'borrow' | 'carry' | 'mixed' | 'multiply' | 'divide' | 'multiply_divide' | 'all_four' | 'fill_add_subtract' | 'fill_multiply_divide' }));
@@ -33,6 +36,9 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
     }
     if (savedTimeLimit) {
       setConfig(prev => ({ ...prev, timeLimit: parseInt(savedTimeLimit) }));
+    }
+    if (savedTestMode) {
+      setIsTestMode(savedTestMode === 'true');
     }
     // 检查是否存在最新错题题集
     try {
@@ -52,6 +58,7 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
     localStorage.setItem('range', config.range.toString());
     localStorage.setItem('questionCount', config.questionCount.toString());
     localStorage.setItem('timeLimit', config.timeLimit.toString());
+    localStorage.setItem('isTestMode', isTestMode.toString());
     
     onStart();
   };
@@ -68,19 +75,28 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold text-gray-800">
           🧮 计算挑战赛
-        </h1>
-        <button
-          onClick={onHistory}
-          className="text-2xl hover:text-gray-600 transition-colors"
-          title="历史记录"
-        >
-          ⏰
-        </button>
-      </div>
+          </h1>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={onWrongQuestions}
+            className="text-2xl hover:text-gray-600 transition-colors"
+            title="错题管理"
+          >
+            📚
+          </button>
+          <button
+            onClick={onHistory}
+            className="text-2xl hover:text-gray-600 transition-colors"
+            title="历史记录"
+          >
+            ⏰
+          </button>
+        </div>
+        </div>
       
       {/* 主要内容区域 */}
-      <div className="flex justify-center mb-24">
-        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 max-w-md w-full relative">
+      <div className="flex justify-center">
+        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 max-w-md w-full">
         
         {/* 个人最佳成绩 - 暂时隐藏 */}
         {/* <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 mb-6">
@@ -100,6 +116,28 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
             </div>
           </div>
         </div> */}
+        
+        {/* 测试模式开关 */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-xl border border-yellow-200">
+            <div className="flex items-center space-x-3">
+              <div className="text-2xl">🧪</div>
+              <div>
+                <div className="text-lg font-semibold text-gray-800">测试模式</div>
+                <div className="text-sm text-gray-600">开启后成绩和错题不会记录到正式池中</div>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isTestMode}
+                onChange={(e) => setIsTestMode(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        </div>
         
         {/* 练习设置 */}
         <div className="space-y-6 mb-8">
@@ -396,37 +434,65 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory }) => {
             </div>
           </div>
           )}
-          {/* 底部按钮区域 - 固定在白色框内底部 */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 bg-white rounded-b-2xl">
-            <div className="space-y-4">
-              <button
-                onClick={handleStart}
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xl font-bold py-4 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-              >
-                🚀 开始练习
-              </button>
-              {hasWrongSet && (
-                <button
-                  onClick={() => {
-                    // 使用最近的错题题集启动
-                    localStorage.setItem('mp-start-with-wrong-set', '1');
-                    try {
-                      const latest = localStorage.getItem('mp-latest-wrong-set');
-                      const arr = latest ? JSON.parse(latest) : [];
-                      if (Array.isArray(arr)) {
-                        localStorage.setItem('questionCount', String(arr.length));
-                      }
-                    } catch {}
-                    onStart();
-                  }}
-                  className="w-full bg-gradient-to-r from-rose-500 to-pink-600 text-white text-lg font-bold py-3 rounded-xl hover:from-rose-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                >
-                  错题练习（使用最近生成）
-                </button>
-              )}
-            </div>
-          </div>
         </div>
+        
+        {/* 底部按钮区域 */}
+        <div className="space-y-4 mt-8">
+               <button
+                 onClick={handleStart}
+                 className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xl font-bold py-4 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+               >
+                 🚀 开始练习
+               </button>
+               {hasWrongSet && (
+                 <button
+                   onClick={() => {
+                // 弹出错题练习配置
+                const wrongSetCount = (() => {
+                     try {
+                       const latest = localStorage.getItem('mp-latest-wrong-set');
+                       const arr = latest ? JSON.parse(latest) : [];
+                    return Array.isArray(arr) ? arr.length : 0;
+                  } catch {
+                    return 0;
+                  }
+                })();
+                
+                const questionCount = window.prompt(`错题练习题目数量 (最多${wrongSetCount}题):`, String(wrongSetCount));
+                if (questionCount === null) return; // 用户取消
+                
+                const count = parseInt(questionCount);
+                if (isNaN(count) || count <= 0) {
+                  alert('请输入有效的题目数量');
+                  return;
+                }
+                if (count > wrongSetCount) {
+                  alert(`题目数量不能超过${wrongSetCount}题`);
+                  return;
+                }
+                
+                const timeLimit = window.prompt('单题时间（秒）:', '5');
+                if (timeLimit === null) return; // 用户取消
+                
+                const time = parseInt(timeLimit);
+                if (isNaN(time) || time <= 0) {
+                  alert('请输入有效的单题时间');
+                  return;
+                }
+                
+                // 保存配置
+                localStorage.setItem('mp-start-with-wrong-set', '1');
+                localStorage.setItem('questionCount', String(count));
+                localStorage.setItem('timeLimit', String(time));
+                     onStart();
+                   }}
+                   className="w-full bg-gradient-to-r from-rose-500 to-pink-600 text-white text-lg font-bold py-3 rounded-xl hover:from-rose-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                 >
+              错题练习
+                 </button>
+               )}
+        </div>
+             </div>
       </div>
       
       <button

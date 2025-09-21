@@ -100,6 +100,79 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [pauseStartTime, setPauseStartTime] = useState<number | null>(null); // 暂停开始时间
   const [totalPauseTime, setTotalPauseTime] = useState(0); // 总暂停时间
+  const [sessionStartTime, setSessionStartTime] = useState<number>(() => Date.now()); // 会话开始时间
+  const [displayTime, setDisplayTime] = useState(Date.now()); // 用于强制更新显示
+  const [showReadyAnimation, setShowReadyAnimation] = useState(true);
+  const [showGoAnimation, setShowGoAnimation] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<Array<{
+    timestamp: string;
+    action: string;
+    data: any;
+  }>>([]);
+  
+  // 调试函数
+  const addDebugInfo = (action: string, data: any) => {
+    try {
+      const timestamp = new Date().toLocaleTimeString() + '.' + Date.now().toString().slice(-3);
+      setDebugInfo(prev => [...prev.slice(-9), { timestamp, action, data }]);
+      console.log(`[${timestamp}] ${action}:`, data);
+    } catch (error) {
+      console.error('addDebugInfo error:', error);
+      console.log(`[DEBUG ERROR] ${action}:`, data);
+    }
+  };
+
+  // 实时更新显示时间
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDisplayTime(Date.now());
+    }, 100); // 每100ms更新一次
+    return () => clearInterval(interval);
+  }, []);
+
+  // 开场动画逻辑
+  useEffect(() => {
+    if (showReadyAnimation) {
+      const timer = setTimeout(() => {
+        setShowReadyAnimation(false);
+        setShowGoAnimation(true);
+      }, 1000); // 停留1秒
+      return () => clearTimeout(timer);
+    }
+  }, [showReadyAnimation]);
+
+  useEffect(() => {
+    if (showGoAnimation) {
+      const timer = setTimeout(() => {
+        setShowGoAnimation(false);
+      }, 1000); // 停留1秒
+      return () => clearTimeout(timer);
+    }
+  }, [showGoAnimation]);
+  
+  // 暂停计时器：计算总暂停时间
+  const getTotalPauseTime = () => {
+    const currentPauseTime = pauseStartTime ? (Date.now() - pauseStartTime) : 0;
+    const total = totalPauseTime + currentPauseTime;
+    console.log('getTotalPauseTime计算:', {
+      totalPauseTime: (totalPauseTime / 1000).toFixed(3),
+      currentPauseTime: (currentPauseTime / 1000).toFixed(3),
+      pauseStartTime,
+      now: Date.now(),
+      total: (total / 1000).toFixed(3)
+    });
+    return total;
+  };
+  
+  // 获取当前题目的实际答题时间
+  const getCurrentQuestionTime = () => {
+    const now = Date.now();
+    const totalTime = now - lastStartTime;
+    const pauseTime = getTotalPauseTime();
+    return Math.max(0, totalTime - pauseTime);
+  };
+  
   const [questionLogs, setQuestionLogs] = useState<Array<{
     a: number;
     b: number;
@@ -341,27 +414,27 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             }
           } else {
             // 除法填空
-            const a = Math.floor(Math.random() * 8) + 2; // 2-9
-            const b = Math.floor(Math.random() * 8) + 2; // 2-9
-            const product = a * b;
+            const divisor = Math.floor(Math.random() * 8) + 2; // 2-9
+            const quotient = Math.floor(Math.random() * 8) + 2; // 2-9
+            const dividend = divisor * quotient;
             const blankPos = Math.random() < 0.5 ? 'a' : 'b';
             if (blankPos === 'a') {
               question = { 
-                a: product, // 被除数
-                b: b, // 除数
+                a: quotient, // 商
+                b: divisor, // 除数
                 operation: '÷', 
-                correctAnswer: product, // 被除数
-                displayText: `? ÷ ${b} = ${a}`,
+                correctAnswer: dividend, // 被除数
+                displayText: `? ÷ ${divisor} = ${quotient}`,
                 isFillBlank: true,
                 blankPosition: 'a'
               };
             } else {
               question = { 
-                a: product, // 被除数
-                b: a, // 商
+                a: dividend, // 被除数
+                b: quotient, // 商
                 operation: '÷', 
-                correctAnswer: b, // 除数
-                displayText: `${product} ÷ ? = ${a}`,
+                correctAnswer: divisor, // 除数
+                displayText: `${dividend} ÷ ? = ${quotient}`,
                 isFillBlank: true,
                 blankPosition: 'b'
               };
@@ -445,9 +518,13 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       }
     }
     
-    setQuestions(newQuestions);
-    setLastStartTime(Date.now());
-    setPerQuestionTimes([]);
+            setQuestions(newQuestions);
+            const now = Date.now();
+            setLastStartTime(now);
+            setSessionStartTime(now);
+            setPerQuestionTimes([]);
+            setTotalPauseTime(0);
+            setPauseStartTime(null);
   }, []);
   
   // 计时器
@@ -513,30 +590,88 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
         // 阻止默认行为，避免空格键触发其他元素
         e.preventDefault();
         // 直接在这里处理提交逻辑，避免循环依赖
-        if (!userAnswer || questions.length === 0 || !questions[currentQuestion]) return;
+        if (userAnswer === '' || userAnswer === null || userAnswer === undefined || questions.length === 0 || !questions[currentQuestion] || isSubmitting) return;
+        
+        setIsSubmitting(true);
         
         const answer = parseInt(userAnswer);
         const isCorrect = answer === questions[currentQuestion].correctAnswer;
         const now = Date.now();
-        // 计算实际答题时间，减去暂停时间
-        const currentPauseTime = pauseStartTime ? (now - pauseStartTime) : 0;
-        const totalCurrentPauseTime = totalPauseTime + currentPauseTime;
-        const durationSec = Math.max(0, Math.round((now - lastStartTime - totalCurrentPauseTime) / 1000));
+        
+        console.log('提交答案调试信息(键盘):', {
+          userAnswer: answer,
+          correctAnswer: questions[currentQuestion].correctAnswer,
+          isCorrect,
+          currentQuestion,
+          totalQuestions: questions.length,
+          question: questions[currentQuestion]
+        });
+        // 计算实际答题时间，使用新的计时逻辑
+        const currentQuestionTime = getCurrentQuestionTime();
+        const durationSec = Math.max(0, currentQuestionTime / 1000);
+        
+        console.log('键盘提交答案时的计时信息:', {
+          answer,
+          isCorrect,
+          now,
+          sessionStartTime,
+          lastStartTime,
+          pauseStartTime,
+          totalPauseTime: (totalPauseTime / 1000).toFixed(3),
+          currentQuestionTime: (currentQuestionTime / 1000).toFixed(3),
+          durationSec: durationSec.toFixed(3),
+          isPaused
+        });
         const nextAnswered = answeredQuestions + 1;
         const nextTimes = [...perQuestionTimes, durationSec];
         setPerQuestionTimes(nextTimes);
         localStorage.setItem('mp-times', JSON.stringify(nextTimes));
         // 记录本题日志
         const q = questions[currentQuestion];
-        setQuestionLogs(prev => [...prev, {
+        const questionLog = {
           a: q.a,
           b: q.b,
           operation: q.operation,
           correctAnswer: q.correctAnswer,
           userAnswer: answer,
           isCorrect,
-          durationSec
-        }]);
+          timeTaken: durationSec,
+          displayText: q.displayText,
+          isFillBlank: q.isFillBlank,
+          blankPosition: q.blankPosition,
+        };
+        setQuestionLogs(prev => [...prev, questionLog]);
+        
+        // 保存题目日志到localStorage
+        try {
+          const updatedLogs = [...questionLogs, questionLog];
+          localStorage.setItem('mp-question-logs', JSON.stringify(updatedLogs));
+        } catch (error) {
+          console.error('保存题目日志失败:', error);
+        }
+        
+        // 如果是错题，增加5秒惩罚时间
+        if (!isCorrect) {
+          // 增加5秒惩罚时间到总时间
+          setTotalTime(prev => prev + 5);
+          
+          const wrongQuestion = {
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            ...questionLog,
+            createdAt: Date.now(),
+            questionType: localStorage.getItem('questionType') || 'unknown',
+            isTestMode: localStorage.getItem('isTestMode') === 'true'
+          };
+          
+          try {
+            const existingWrongQuestions = localStorage.getItem('mp-wrong-questions');
+            const wrongQuestions = existingWrongQuestions ? JSON.parse(existingWrongQuestions) : [];
+            wrongQuestions.push(wrongQuestion);
+            localStorage.setItem('mp-wrong-questions', JSON.stringify(wrongQuestions));
+          } catch (error) {
+            console.error('保存错题失败:', error);
+          }
+        }
         
         if (isCorrect) {
           const nextCorrect = correctCount + 1;
@@ -554,6 +689,11 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           if (currentQuestion < questions.length - 1) {
             setCurrentQuestion(prev => prev + 1);
             setLastStartTime(now);
+            // 重置每题的暂停时间
+            setTotalPauseTime(0);
+            setPauseStartTime(null);
+            // 重置提交状态
+            setIsSubmitting(false);
           } else {
             // 保存最终统计结果与历史记录
             localStorage.setItem('math-practice-score', (score + 1).toString());
@@ -566,10 +706,27 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               const correct = nextCorrect;
               const wrong = Math.max(0, total - correct);
               const avg = total > 0 ? nextTimes.reduce((s,n)=>s+n,0) / total : 0;
-              const fullLogs = [...questionLogs, {
-                a: q.a, b: q.b, operation: q.operation, correctAnswer: q.correctAnswer,
-                userAnswer: answer, isCorrect, durationSec
-              }];
+              // 从localStorage获取完整的questionLogs数组（已经包含了当前题目）
+              let fullLogs: any[] = [];
+              try {
+                const storedLogs = localStorage.getItem('mp-question-logs');
+                if (storedLogs) {
+                  fullLogs = JSON.parse(storedLogs);
+                }
+              } catch (error) {
+                console.error('获取题目日志失败:', error);
+                fullLogs = [];
+              }
+              
+              console.log('保存历史记录-正确分支:', {
+                questionLogsLength: questionLogs.length,
+                currentQuestionLog,
+                fullLogsLength: fullLogs.length,
+                fullLogs: fullLogs
+              });
+              
+              // 更新questionLogs状态
+              setQuestionLogs(prevLogs => [...prevLogs, currentQuestionLog]);
               const wrongDetails = fullLogs.filter(x => !x.isCorrect).sort((p, c) => c.durationSec - p.durationSec);
               const slowCorrectDetails = fullLogs.filter(x => x.isCorrect && x.durationSec >= 4).sort((p, c) => c.durationSec - p.durationSec);
               const record = {
@@ -581,6 +738,10 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                 accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
                 avgTime: avg,
                 times: nextTimes,
+                type: localStorage.getItem('questionType') || 'unknown',
+                timeLimit: parseInt(localStorage.getItem('timeLimit') || '5'),
+                isManual: false,
+                questionLogs: fullLogs || [],
                 wrongDetails,
                 slowCorrectDetails
               };
@@ -590,7 +751,15 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             onFinish();
           }
         } else {
-          // 答错时的效果
+          // 答错时的效果 - 显示红色报警但立即进入下一题
+          console.log('答错调试信息(键盘):', {
+            userAnswer: answer,
+            correctAnswer: questions[currentQuestion].correctAnswer,
+            question: questions[currentQuestion],
+            currentQuestion,
+            totalQuestions: questions.length
+          });
+          
           setIsWrong(true);
           setShowFeedback({
             isCorrect: false,
@@ -611,6 +780,11 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           if (currentQuestion < questions.length - 1) {
             setCurrentQuestion(prev => prev + 1);
             setLastStartTime(now);
+            // 重置每题的暂停时间
+            setTotalPauseTime(0);
+            setPauseStartTime(null);
+            // 重置提交状态
+            setIsSubmitting(false);
           } else {
             console.log('保存最终统计(回车):', { correct: correctCount, wrong: nextWrong, answered: nextAnswered });
             // 历史记录（仅完成时写入）
@@ -621,10 +795,27 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               const correct = correctCount;
               const wrong = Math.max(0, total - correct);
               const avg = total > 0 ? nextTimes.reduce((s,n)=>s+n,0) / total : 0;
-              const fullLogs = [...questionLogs, {
-                a: q.a, b: q.b, operation: q.operation, correctAnswer: q.correctAnswer,
-                userAnswer: answer, isCorrect, durationSec
-              }];
+              // 从localStorage获取完整的questionLogs数组（已经包含了当前题目）
+              let fullLogs: any[] = [];
+              try {
+                const storedLogs = localStorage.getItem('mp-question-logs');
+                if (storedLogs) {
+                  fullLogs = JSON.parse(storedLogs);
+                }
+              } catch (error) {
+                console.error('获取题目日志失败:', error);
+                fullLogs = [];
+              }
+              
+              console.log('保存历史记录-错误分支:', {
+                questionLogsLength: questionLogs.length,
+                currentQuestionLog,
+                fullLogsLength: fullLogs.length,
+                fullLogs: fullLogs
+              });
+              
+              // 更新questionLogs状态
+              setQuestionLogs(prevLogs => [...prevLogs, currentQuestionLog]);
               const wrongDetails = fullLogs.filter(x => !x.isCorrect).sort((p, c) => c.durationSec - p.durationSec);
               const slowCorrectDetails = fullLogs.filter(x => x.isCorrect && x.durationSec >= 4).sort((p, c) => c.durationSec - p.durationSec);
               const record = {
@@ -636,6 +827,10 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                 accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
                 avgTime: avg,
                 times: nextTimes,
+                type: localStorage.getItem('questionType') || 'unknown',
+                timeLimit: parseInt(localStorage.getItem('timeLimit') || '5'),
+                isManual: false,
+                questionLogs: fullLogs || [],
                 wrongDetails,
                 slowCorrectDetails
               };
@@ -660,14 +855,11 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
   // 处理数字输入，如果暂停则自动继续
   const handleNumberInput = (digit: string) => {
     if (isPaused) {
-      setPauseStartTime(prevPauseStart => {
-        if (prevPauseStart) {
-          const now = Date.now();
-          setTotalPauseTime(prev => prev + (now - prevPauseStart));
-          return null;
-        }
-        return prevPauseStart;
-      });
+      const now = Date.now();
+      if (pauseStartTime) {
+        setTotalPauseTime(prev => prev + (now - pauseStartTime));
+        setPauseStartTime(null);
+      }
       setIsPaused(false);
     }
     setUserAnswer(prev => prev + digit);
@@ -675,21 +867,191 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
   };
 
   const handleSubmit = () => {
-    if (!userAnswer || questions.length === 0 || !questions[currentQuestion]) return;
+    addDebugInfo('提交按钮点击', {
+      userAnswer,
+      isSubmitting,
+      currentQuestion,
+      questionsLength: questions.length,
+      hasCurrentQuestion: !!questions[currentQuestion]
+    });
+    
+    if (userAnswer === '' || userAnswer === null || userAnswer === undefined || questions.length === 0 || !questions[currentQuestion] || isSubmitting) {
+      addDebugInfo('提交被阻止', {
+        reason: {
+          emptyAnswer: userAnswer === '',
+          nullAnswer: userAnswer === null,
+          undefinedAnswer: userAnswer === undefined,
+          noQuestions: questions.length === 0,
+          noCurrentQuestion: !questions[currentQuestion],
+          isSubmitting
+        }
+      });
+      return;
+    }
+    
+    addDebugInfo('开始提交', { userAnswer, currentQuestion });
+    setIsSubmitting(true);
     
     const answer = parseInt(userAnswer);
     const isCorrect = answer === questions[currentQuestion].correctAnswer;
     const now = Date.now();
-    // 计算实际答题时间，减去暂停时间
-    const currentPauseTime = pauseStartTime ? (now - pauseStartTime) : 0;
-    const totalCurrentPauseTime = totalPauseTime + currentPauseTime;
-    const durationSec = Math.max(0, Math.round((now - lastStartTime - totalCurrentPauseTime) / 1000));
+    
+    addDebugInfo('答案验证', {
+      userAnswer: answer,
+      correctAnswer: questions[currentQuestion].correctAnswer,
+      isCorrect,
+      question: questions[currentQuestion]
+    });
+    
+    addDebugInfo('开始计算答题时间', { currentQuestion, questionsLength: questions.length });
+    
+    // 计算实际答题时间，使用新的计时逻辑
+    const currentQuestionTime = getCurrentQuestionTime();
+    const durationSec = Math.max(0, currentQuestionTime / 1000);
+    
+    addDebugInfo('答题时间计算完成', { 
+      currentQuestionTime, 
+      durationSec, 
+      isCorrect,
+      willProceedToNext: true
+    });
+    
+    console.log('提交答案时的计时信息:', {
+      answer,
+      isCorrect,
+      now,
+      sessionStartTime,
+      lastStartTime,
+      pauseStartTime,
+      totalPauseTime: (totalPauseTime / 1000).toFixed(3),
+      currentQuestionTime: (currentQuestionTime / 1000).toFixed(3),
+      durationSec: durationSec.toFixed(3),
+      isPaused
+    });
     const nextAnswered = answeredQuestions + 1;
     const nextTimes = [...perQuestionTimes, durationSec];
     setPerQuestionTimes(nextTimes);
     localStorage.setItem('mp-times', JSON.stringify(nextTimes));
     
+    // 记录题目日志
+    const q = questions[currentQuestion];
+    const questionLog = {
+      a: q.a,
+      b: q.b,
+      operation: q.operation,
+      correctAnswer: q.correctAnswer,
+      userAnswer: answer,
+      isCorrect,
+      timeTaken: durationSec,
+      displayText: q.displayText,
+      isFillBlank: q.isFillBlank,
+      blankPosition: q.blankPosition,
+    };
+    
+    // 使用函数式更新并获取最新状态
+    setQuestionLogs(prev => {
+      const newLogs = [...prev, questionLog];
+      console.log('更新questionLogs:', {
+        prevLength: prev.length,
+        newLogsLength: newLogs.length,
+        questionLog: questionLog
+      });
+      return newLogs;
+    });
+    
+    // 保存题目日志到localStorage
+    try {
+      const updatedLogs = [...questionLogs, questionLog];
+      localStorage.setItem('mp-question-logs', JSON.stringify(updatedLogs));
+    } catch (error) {
+      console.error('保存题目日志失败:', error);
+    }
+    
+    // 如果是错题，增加5秒惩罚时间并保存到错题集
+    if (!isCorrect) {
+      try {
+        addDebugInfo('开始处理错题', { isCorrect, questionLog });
+        
+        addDebugInfo('准备增加惩罚时间', { currentTotalTime: totalTime });
+        // 增加5秒惩罚时间到总时间
+        setTotalTime(prev => {
+          const newTime = prev + 5;
+          addDebugInfo('惩罚时间已增加', { oldTime: prev, newTime });
+          return newTime;
+        });
+        
+        addDebugInfo('开始创建错题对象', { questionLogKeys: Object.keys(questionLog) });
+        
+        let wrongQuestion;
+        try {
+          addDebugInfo('创建错题ID', { timestamp: Date.now() });
+          const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+          addDebugInfo('ID创建完成', { id });
+          
+          addDebugInfo('获取localStorage数据', { 
+            questionType: localStorage.getItem('questionType'),
+            isTestMode: localStorage.getItem('isTestMode')
+          });
+          
+          wrongQuestion = {
+            id: id,
+            ...questionLog,
+            createdAt: Date.now(),
+            questionType: localStorage.getItem('questionType') || 'unknown',
+            isTestMode: localStorage.getItem('isTestMode') === 'true'
+          };
+          
+          addDebugInfo('错题对象创建完成', { wrongQuestion });
+        } catch (error) {
+          addDebugInfo('错题对象创建失败', { error: error.message, questionLog });
+          return; // 如果创建失败，直接返回
+        }
+        
+        addDebugInfo('开始保存错题到localStorage', { wrongQuestion });
+        
+        try {
+          addDebugInfo('获取现有错题列表', {});
+          const existingWrongQuestions = localStorage.getItem('mp-wrong-questions');
+          addDebugInfo('现有错题数据', { existingWrongQuestions: existingWrongQuestions?.substring(0, 100) + '...' });
+          
+          const wrongQuestions = existingWrongQuestions ? JSON.parse(existingWrongQuestions) : [];
+          addDebugInfo('解析错题列表', { wrongQuestionsLength: wrongQuestions.length });
+          
+          wrongQuestions.push(wrongQuestion);
+          addDebugInfo('添加新错题到列表', { newLength: wrongQuestions.length });
+          
+          const jsonString = JSON.stringify(wrongQuestions);
+          addDebugInfo('序列化错题数据', { jsonLength: jsonString.length });
+          
+          localStorage.setItem('mp-wrong-questions', jsonString);
+          addDebugInfo('错题保存成功', { wrongQuestionsLength: wrongQuestions.length });
+        } catch (error) {
+          console.error('保存错题失败:', error);
+          addDebugInfo('错题保存失败', { error: error.message, stack: error.stack });
+        }
+        
+        addDebugInfo('错题处理完成', { isCorrect, questionLog });
+      } catch (error) {
+        console.error('错题处理整体失败:', error);
+        addDebugInfo('错题处理整体失败', { error: error.message, stack: error.stack });
+      }
+    }
+    
+    addDebugInfo('准备判断答案', { 
+      isCorrect, 
+      answer, 
+      correctAnswer: questions[currentQuestion].correctAnswer,
+      willEnterCorrectBranch: isCorrect,
+      willEnterWrongBranch: !isCorrect
+    });
+    
     if (isCorrect) {
+      addDebugInfo('答案正确', { 
+        currentQuestion, 
+        nextQuestion: currentQuestion + 1,
+        totalQuestions: questions.length 
+      });
+      
       setScore(prev => prev + 1);
       setAnsweredQuestions(prev => prev + 1);
       setCorrectCount(prev => prev + 1);
@@ -702,16 +1064,110 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       setIsWrong(false);
       
       if (currentQuestion < questions.length - 1) {
+        addDebugInfo('跳转到下一题', { 
+          from: currentQuestion, 
+          to: currentQuestion + 1,
+          isSubmitting: false 
+        });
         setCurrentQuestion(prev => prev + 1);
         setLastStartTime(now);
+        // 重置每题的暂停时间
+        setTotalPauseTime(0);
+        setPauseStartTime(null);
+        // 重置提交状态
+        setIsSubmitting(false);
       } else {
+        addDebugInfo('练习完成', { 
+          totalQuestions: questions.length,
+          correct: nextCorrect,
+          wrong: wrongCount 
+        });
         // 保存最终统计结果
         localStorage.setItem('math-practice-score', (score + 1).toString());
         console.log('保存最终统计(按钮):', { correct: nextCorrect, wrong: wrongCount, answered: nextAnswered });
+        
+            // 保存历史记录
+            try {
+              const historyRaw = localStorage.getItem('mp-history');
+              const history: any[] = historyRaw ? JSON.parse(historyRaw) : [];
+              const total = nextTimes.length;
+              const correct = nextCorrect;
+              const wrong = Math.max(0, total - correct);
+              const avg = total > 0 ? nextTimes.reduce((s,n)=>s+n,0) / total : 0;
+              
+              // 从localStorage获取完整的questionLogs数组（已经包含了当前题目）
+              let fullLogs: any[] = [];
+              try {
+                const storedLogs = localStorage.getItem('mp-question-logs');
+                if (storedLogs) {
+                  fullLogs = JSON.parse(storedLogs);
+                }
+              } catch (error) {
+                console.error('获取题目日志失败:', error);
+                fullLogs = [];
+              }
+          
+          console.log('保存历史记录-按钮提交:', {
+            fullLogsLength: fullLogs.length,
+            fullLogs: fullLogs,
+            currentQuestion: currentQuestion,
+            questionsLength: questions.length,
+            isLastQuestion: currentQuestion === questions.length - 1
+          });
+          
+          const wrongDetails = fullLogs.filter(x => !x.isCorrect).sort((p, c) => c.durationSec - p.durationSec);
+          const slowCorrectDetails = fullLogs.filter(x => x.isCorrect && x.durationSec >= 4).sort((p, c) => c.durationSec - p.durationSec);
+          const record = {
+            id: Date.now(),
+            createdAt: new Date().toISOString(),
+            questionCount: total,
+            correct,
+            wrong,
+            accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
+            avgTime: avg,
+            times: nextTimes,
+            type: localStorage.getItem('questionType') || 'unknown',
+            timeLimit: parseInt(localStorage.getItem('timeLimit') || '5'),
+            isManual: false,
+            questionLogs: fullLogs || [],
+            wrongDetails,
+            slowCorrectDetails
+          };
+          
+          history.unshift(record);
+          localStorage.setItem('mp-history', JSON.stringify(history));
+          
+          console.log('历史记录保存完成-按钮提交:', {
+            historyLength: history.length,
+            savedRecordId: record.id,
+            savedRecordQuestionLogsLength: record.questionLogs.length
+          });
+        } catch (error) {
+          console.error('保存历史记录失败:', error);
+        }
+        
         onFinish();
       }
     } else {
-      // 答错时的效果
+      // 答错时的效果 - 显示红色报警但立即进入下一题
+      console.log('进入答错分支:', {
+        isCorrect,
+        answer,
+        correctAnswer: questions[currentQuestion].correctAnswer,
+        currentQuestion,
+        questionsLength: questions.length,
+        isLastQuestion: currentQuestion === questions.length - 1,
+        isSubmitting
+      });
+      
+      addDebugInfo('答案错误', {
+        userAnswer: answer,
+        correctAnswer: questions[currentQuestion].correctAnswer,
+        currentQuestion,
+        nextQuestion: currentQuestion + 1,
+        totalQuestions: questions.length
+      });
+      
       setIsWrong(true);
       setShowFeedback({
         isCorrect: false,
@@ -731,10 +1187,88 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       setIsWrong(false);
       
       if (currentQuestion < questions.length - 1) {
+        addDebugInfo('答错跳转到下一题', { 
+          from: currentQuestion, 
+          to: currentQuestion + 1,
+          isSubmitting: false 
+        });
         setCurrentQuestion(prev => prev + 1);
         setLastStartTime(now);
+        // 重置每题的暂停时间
+        setTotalPauseTime(0);
+        setPauseStartTime(null);
+        // 重置提交状态
+        setIsSubmitting(false);
       } else {
+        console.log('答错练习完成:', { 
+          totalQuestions: questions.length,
+          correct: correctCount,
+          wrong: nextWrong,
+          currentQuestion,
+          questionsLength: questions.length
+        });
         console.log('保存最终统计(按钮):', { correct: correctCount, wrong: nextWrong, answered: nextAnswered });
+        
+            // 保存历史记录
+            try {
+              const historyRaw = localStorage.getItem('mp-history');
+              const history: any[] = historyRaw ? JSON.parse(historyRaw) : [];
+              const total = nextTimes.length;
+              const correct = correctCount;
+              const wrong = Math.max(0, total - correct);
+              const avg = total > 0 ? nextTimes.reduce((s,n)=>s+n,0) / total : 0;
+              
+              // 从localStorage获取完整的questionLogs数组（已经包含了当前题目）
+              let fullLogs: any[] = [];
+              try {
+                const storedLogs = localStorage.getItem('mp-question-logs');
+                if (storedLogs) {
+                  fullLogs = JSON.parse(storedLogs);
+                }
+              } catch (error) {
+                console.error('获取题目日志失败:', error);
+                fullLogs = [];
+              }
+          
+          console.log('保存历史记录-答错分支:', {
+            fullLogsLength: fullLogs.length,
+            fullLogs: fullLogs,
+            currentQuestion: currentQuestion,
+            questionsLength: questions.length,
+            isLastQuestion: currentQuestion === questions.length - 1
+          });
+          
+          const wrongDetails = fullLogs.filter(x => !x.isCorrect).sort((p, c) => c.durationSec - p.durationSec);
+          const slowCorrectDetails = fullLogs.filter(x => x.isCorrect && x.durationSec >= 4).sort((p, c) => c.durationSec - p.durationSec);
+          const record = {
+            id: Date.now(),
+            createdAt: new Date().toISOString(),
+            questionCount: total,
+            correct,
+            wrong,
+            accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
+            avgTime: avg,
+            times: nextTimes,
+            type: localStorage.getItem('questionType') || 'unknown',
+            timeLimit: parseInt(localStorage.getItem('timeLimit') || '5'),
+            isManual: false,
+            questionLogs: fullLogs || [],
+            wrongDetails,
+            slowCorrectDetails
+          };
+          
+          history.unshift(record);
+          localStorage.setItem('mp-history', JSON.stringify(history));
+          
+          console.log('历史记录保存完成-答错分支:', {
+            historyLength: history.length,
+            savedRecordId: record.id,
+            savedRecordQuestionLogsLength: record.questionLogs.length
+          });
+        } catch (error) {
+          console.error('保存历史记录失败:', error);
+        }
+        
         onFinish();
       }
       
@@ -762,33 +1296,116 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             </div>
           </div>
           
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800">
-              {isPaused ? '⏸️ 暂停' : `${timeLeft}秒`}
-            </div>
-          </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-800">
+                      {isPaused ? '⏸️ 暂停' : `${timeLeft}秒`}
+                    </div>
+                  </div>
           
           <div className="flex items-center space-x-3">
             <button
-              onClick={() => setIsPaused(prev => !prev)}
+              onClick={() => {
+                const now = Date.now();
+                console.log('暂停按钮点击:', {
+                  isPaused,
+                  pauseStartTime,
+                  totalPauseTime,
+                  now,
+                  sessionStartTime,
+                  lastStartTime
+                });
+                setIsPaused(prev => {
+                  const newPaused = !prev;
+                  if (newPaused) {
+                    // 开始暂停
+                    setPauseStartTime(now);
+                    console.log('开始暂停，设置暂停开始时间:', now);
+                  } else {
+                    // 结束暂停，累计暂停时间
+                    if (pauseStartTime) {
+                      const pauseDuration = now - pauseStartTime;
+                      setTotalPauseTime(prev => {
+                        const newTotal = prev + pauseDuration;
+                        console.log('结束暂停，累计暂停时间:', { prev, pauseDuration, newTotal });
+                        return newTotal;
+                      });
+                      setPauseStartTime(null);
+                    }
+                  }
+                  return newPaused;
+                });
+              }}
               className="px-3 py-1 rounded-lg text-sm font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-blue-100 active:text-blue-700"
             >
               {isPaused ? '▶️ 继续' : '⏸️ 暂停'}
             </button>
             <div className="text-gray-600 text-lg font-medium">
-              第 {currentQuestion + 1} 题
+              {currentQuestion + 1}/{questions.length}
             </div>
           </div>
         </div>
       </div>
       
+        {/* 调试面板 - 已隐藏 */}
+        {false && (
+          <div className="fixed top-4 right-4 w-80 max-h-96 bg-black/90 text-white text-xs p-3 rounded-lg overflow-y-auto z-50">
+            <div className="flex justify-between items-center mb-2">
+              <div className="font-bold text-yellow-400">调试面板</div>
+              <div className="space-x-2">
+                <button 
+                  onClick={() => {
+                    const debugText = debugInfo.map(info => 
+                      `[${info.timestamp}] ${info.action}: ${typeof info.data === 'object' ? JSON.stringify(info.data, null, 2) : info.data}`
+                    ).join('\n');
+                    navigator.clipboard.writeText(debugText);
+                    alert('调试信息已复制到剪贴板');
+                  }}
+                  className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                >
+                  复制
+                </button>
+                <button 
+                  onClick={() => setDebugInfo([])}
+                  className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                >
+                  清空
+                </button>
+              </div>
+            </div>
+            <div className="space-y-1">
+              {debugInfo.map((info, index) => (
+                <div key={index} className="border-b border-gray-600 pb-1">
+                  <div className="text-yellow-300">{info.timestamp}</div>
+                  <div className="text-green-400 font-semibold">{info.action}</div>
+                  <div className="text-gray-300 text-xs">
+                    {typeof info.data === 'object' ? JSON.stringify(info.data, null, 2) : info.data}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       {/* 主要内容区域 */}
       <div className="flex-1 flex flex-col items-center justify-center p-1 sm:p-8">
         {/* 题目显示（适配窄屏不换行，自动缩放） */}
         <div className="relative mb-8 sm:mb-12 w-full max-w-full px-1 sm:px-2">
-          <div className={`font-bold text-gray-800 mb-4 transition-all duration-300 whitespace-nowrap text-center ${
-            isWrong ? 'animate-pulse' : ''
-          }`} style={{ fontSize: 'clamp(3rem, 8vw, 5rem)' }}>
+          {/* 开场动画 */}
+          {(showReadyAnimation || showGoAnimation) && (
+            <div className="flex items-center justify-center h-32">
+              <div className={`text-6xl sm:text-8xl font-bold transition-all duration-500 ${
+                showReadyAnimation ? 'animate-bounce text-blue-600' : 'animate-pulse text-green-600'
+              }`}>
+                {showReadyAnimation ? 'Ready' : 'GO'}
+              </div>
+            </div>
+          )}
+          
+          {/* 题目内容 - 在动画期间隐藏 */}
+          {!(showReadyAnimation || showGoAnimation) && (
+            <div className={`font-bold text-gray-800 mb-4 transition-all duration-300 whitespace-nowrap text-center ${
+              isWrong ? 'animate-pulse' : ''
+            }`} style={{ fontSize: 'clamp(3rem, 8vw, 5rem)' }}>
             {questions.length > 0 && (() => {
               const question = questions[currentQuestion];
               if (question?.isFillBlank) {
@@ -821,7 +1438,8 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                 );
               }
             })()}
-          </div>
+            </div>
+          )}
           
           {/* 小反馈信息 - 固定在题目上方 */}
           {showFeedback && (
@@ -846,7 +1464,9 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           <button className="aspect-square text-4xl sm:text-[2.5em] font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-2 row-start-2" onClick={() => handleNumberInput('5')}>5</button>
           <button className="aspect-square text-4xl sm:text-[2.5em] font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-3 row-start-2" onClick={() => handleNumberInput('6')}>6</button>
           {/* 提交按钮占两行 */}
-          <button className="text-sm sm:text-lg font-bold rounded-lg bg-green-500 text-white hover:bg-green-600 transition shadow disabled:bg-gray-400 disabled:cursor-not-allowed col-start-4 row-start-2 row-span-2" onClick={handleSubmit} disabled={!userAnswer}>提交</button>
+          <button className="text-sm sm:text-lg font-bold rounded-lg bg-green-500 text-white hover:bg-green-600 transition shadow disabled:bg-gray-400 disabled:cursor-not-allowed col-start-4 row-start-2 row-span-2" onClick={handleSubmit} disabled={userAnswer === '' || userAnswer === null || userAnswer === undefined || isSubmitting}>
+            {isSubmitting ? '提交中...' : '提交'}
+          </button>
 
           {/* 第三行 */}
           <button className="aspect-square text-4xl sm:text-[2.5em] font-bold rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-1 row-start-3" onClick={() => handleNumberInput('7')}>7</button>
