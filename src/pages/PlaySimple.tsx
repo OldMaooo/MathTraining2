@@ -1145,6 +1145,8 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
         } catch (error) {
           console.error('保存历史记录失败:', error);
         }
+        // 重置提交状态，避免停留在“提交中”
+        setIsSubmitting(false);
         
         onFinish();
       }
