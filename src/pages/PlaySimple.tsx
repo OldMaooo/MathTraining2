@@ -86,6 +86,17 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
   const sfxCorrectRef = useRef<HTMLAudioElement | null>(null);
   const sfxWrongRef = useRef<HTMLAudioElement | null>(null);
   const sfxStartRef = useRef<HTMLAudioElement | null>(null);
+  // 预热音频（iOS需要用户交互后才能播放，所以仅创建并load）
+  useEffect(() => {
+    try {
+      sfxCorrectRef.current = new Audio(resolveSfxUrl('correct'));
+      sfxWrongRef.current = new Audio(resolveSfxUrl('wrong'));
+      sfxStartRef.current = new Audio(resolveSfxUrl('start'));
+      sfxCorrectRef.current.load();
+      sfxWrongRef.current.load();
+      sfxStartRef.current.load();
+    } catch {}
+  }, []);
   // 解析音效URL：优先使用存在的特定格式映射，其次按常见扩展名回退
   const resolveSfxUrl = (name: 'correct'|'wrong'|'start'|'success') => {
     // 已知你当前放置的文件：correct.wav / wrong.wav / start.wav / success.mp3

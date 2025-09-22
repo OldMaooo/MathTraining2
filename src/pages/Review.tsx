@@ -190,7 +190,10 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
         src: confettiSrc,
         renderConfig: { autoResize: true, devicePixelRatio: 1 },
       });
-      player.addEventListener?.('load', () => console.log('[Confetti] load'));
+      player.addEventListener?.('load', () => {
+        console.log('[Confetti] load');
+        try { player.play?.(); } catch {}
+      });
       player.addEventListener?.('complete', () => console.log('[Confetti] complete'));
       player.addEventListener?.('error', (e: any) => console.warn('[Confetti] error', e));
     } catch (e) {
@@ -380,10 +383,10 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
   };
   
   useEffect(() => {
-    // 进入结果页时延迟0.5s播放成功音效
+    // 进入结果页时延迟0.2s播放成功音效
     const t = setTimeout(() => {
       try { playSuccess(); } catch {}
-    }, 500);
+    }, 200);
     return () => clearTimeout(t);
   }, []);
 

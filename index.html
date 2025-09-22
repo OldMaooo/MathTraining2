@@ -11,6 +11,12 @@
       import { DotLottie } from 'https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web/+esm';
       window.DotLottie = DotLottie;
     </script>
+    <!-- Preload SFX and dotLottie to minimize first-play latency -->
+    <link rel="preload" as="audio" href="./sfx/correct.wav" />
+    <link rel="preload" as="audio" href="./sfx/wrong.wav" />
+    <link rel="preload" as="audio" href="./sfx/start.wav" />
+    <link rel="preload" as="audio" href="./sfx/success.mp3" />
+    <link rel="preload" as="fetch" href="./sfx/Confetti.lottie" crossorigin="anonymous" />
     <title>计算挑战赛</title>
   </head>
   <body>
