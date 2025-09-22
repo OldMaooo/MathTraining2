@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface PlaySimpleQuestion {
   a: number;
@@ -81,6 +81,41 @@ const getQuestionTypeName = (type: string): string => {
 };
 
 export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
+  // 音效
+  const sfxBase = (import.meta as any).env?.BASE_URL || '/';
+  const sfxCorrectRef = useRef<HTMLAudioElement | null>(null);
+  const sfxWrongRef = useRef<HTMLAudioElement | null>(null);
+  const sfxStartRef = useRef<HTMLAudioElement | null>(null);
+  // 解析音效URL：优先使用存在的特定格式映射，其次按常见扩展名回退
+  const resolveSfxUrl = (name: 'correct'|'wrong'|'start'|'success') => {
+    // 已知你当前放置的文件：correct.wav / wrong.wav / start.wav / success.mp3
+    const known: Record<string, string> = {
+      correct: `${sfxBase}sfx/correct.wav`,
+      wrong: `${sfxBase}sfx/wrong.wav`,
+      start: `${sfxBase}sfx/start.wav`,
+      success: `${sfxBase}sfx/success.mp3`,
+    };
+    if (known[name]) return known[name];
+    const exts = ['mp3','wav','m4a','ogg'];
+    return `${sfxBase}sfx/${name}.${exts[0]}`;
+  };
+  const ensureSfx = () => {
+    if (!sfxCorrectRef.current) sfxCorrectRef.current = new Audio(resolveSfxUrl('correct'));
+    if (!sfxWrongRef.current) sfxWrongRef.current = new Audio(resolveSfxUrl('wrong'));
+    if (!sfxStartRef.current) sfxStartRef.current = new Audio(resolveSfxUrl('start'));
+  };
+  const playSfx = (type: 'correct' | 'wrong' | 'start') => {
+    try {
+      ensureSfx();
+      const map = {
+        correct: sfxCorrectRef.current!,
+        wrong: sfxWrongRef.current!,
+        start: sfxStartRef.current!,
+      } as const;
+      map[type].currentTime = 0;
+      map[type].play().catch(() => {});
+    } catch {}
+  };
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
   const [score, setScore] = useState(0);
@@ -134,6 +169,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
   // 开场动画逻辑
   useEffect(() => {
     if (showReadyAnimation) {
+      playSfx('start');
       const timer = setTimeout(() => {
         setShowReadyAnimation(false);
         setShowGoAnimation(true);
@@ -674,6 +710,8 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
         }
         
         if (isCorrect) {
+          // 键盘提交-答对音效
+          playSfx('correct');
           const nextCorrect = correctCount + 1;
           setScore(prev => prev + 1);
           setAnsweredQuestions(prev => prev + 1);
@@ -751,6 +789,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             onFinish();
           }
         } else {
+          playSfx('wrong');
           // 答错时的效果 - 显示红色报警但立即进入下一题
           console.log('答错调试信息(键盘):', {
             userAnswer: answer,
@@ -1046,6 +1085,8 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     });
     
     if (isCorrect) {
+      // 按钮提交-答对音效
+      playSfx('correct');
       addDebugInfo('答案正确', { 
         currentQuestion, 
         nextQuestion: currentQuestion + 1,
@@ -1150,7 +1191,9 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
         
         onFinish();
       }
-    } else {
+        } else {
+          // 键盘提交-答错音效
+          playSfx('wrong');
       // 答错时的效果 - 显示红色报警但立即进入下一题
       console.log('进入答错分支:', {
         isCorrect,
@@ -1396,7 +1439,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           {(showReadyAnimation || showGoAnimation) && (
             <div className="flex items-center justify-center h-32">
               <div className={`text-6xl sm:text-8xl font-bold transition-all duration-500 ${
-                showReadyAnimation ? 'animate-bounce text-blue-600' : 'animate-pulse text-green-600'
+                showReadyAnimation ? 'animate-bounce text-blue-600' : 'animate-bounce text-green-600'
               }`}>
                 {showReadyAnimation ? 'Ready' : 'GO'}
               </div>

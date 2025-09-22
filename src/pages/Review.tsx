@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface ReviewProps {
   onRestart: () => void;
@@ -11,6 +11,8 @@ const PieChart: React.FC<{ correct: number; wrong: number; total: number }> = ({
   const circumference = 2 * Math.PI * radius;
   const correctLen = total > 0 ? (correct / total) * circumference : 0;
   const wrongLen = total > 0 ? (wrong / total) * circumference : 0;
+
+  // 已移除：这里不应放在 PieChart 内部使用 brokeRecord。实际渲染逻辑在 Review 组件中处理。
 
   return (
     <div className="flex flex-col items-center">
@@ -119,6 +121,18 @@ const SpeedChart: React.FC<{
 };
 
 export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
+  // 成功音效
+  const sfxBase = (import.meta as any).env?.BASE_URL || '/';
+  const successRef = useRef<HTMLAudioElement | null>(null);
+  const playSuccess = () => {
+    try {
+      // 你当前的文件是 success.mp3，这里做多格式回退的解析
+      const url = `${sfxBase}sfx/success.mp3`;
+      if (!successRef.current) successRef.current = new Audio(url);
+      successRef.current.currentTime = 0;
+      successRef.current.play().catch(() => {});
+    } catch {}
+  };
   const [correctCount, setCorrectCount] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
   const [answeredQuestions, setAnsweredQuestions] = useState(0);
@@ -147,6 +161,46 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
   }>>([]);
   const [sortField, setSortField] = useState<string>('question');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  // Confetti (dotLottie) - 总是播放
+  const lottieBase = (import.meta as any).env?.BASE_URL || '/';
+  const confettiSrc = `${lottieBase}sfx/Confetti.lottie`;
+  const confettiCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const canvas = confettiCanvasRef.current;
+    const DotLottie = (window as any).DotLottie;
+    console.log('[Confetti] init', { hasCanvas: !!canvas, hasDotLottie: !!DotLottie, confettiSrc });
+    if (!canvas || !DotLottie) return;
+    // 全屏尺寸
+    const setSize = () => {
+      try {
+        const w = window.innerWidth || document.documentElement.clientWidth || 375;
+        const h = window.innerHeight || document.documentElement.clientHeight || 667;
+        canvas.width = w;
+        canvas.height = h;
+      } catch {}
+    };
+    setSize();
+    window.addEventListener('resize', setSize);
+    let player: any;
+    try {
+      player = new DotLottie({
+        autoplay: true,
+        loop: false,
+        canvas,
+        src: confettiSrc,
+        renderConfig: { autoResize: true, devicePixelRatio: 1 },
+      });
+      player.addEventListener?.('load', () => console.log('[Confetti] load'));
+      player.addEventListener?.('complete', () => console.log('[Confetti] complete'));
+      player.addEventListener?.('error', (e: any) => console.warn('[Confetti] error', e));
+    } catch (e) {
+      console.warn('[Confetti] init failed', e);
+    }
+    return () => {
+      try { player?.destroy?.(); } catch {}
+      window.removeEventListener('resize', setSize);
+    };
+  }, []);
   
   useEffect(() => {
     // 从localStorage获取成绩和配置
@@ -325,6 +379,14 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
     return '📚 不要灰心，多练习退位减法，一定能进步的！';
   };
   
+  useEffect(() => {
+    // 进入结果页时延迟0.5s播放成功音效
+    const t = setTimeout(() => {
+      try { playSuccess(); } catch {}
+    }, 500);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-start pt-8 p-2 sm:p-6">
               {/* 顶部右侧：按钮组 */}
@@ -390,17 +452,11 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
         </div>
       </div>
 
-      {/* 破纪录提示 */}
-      {brokeRecord && avgTime > 0 && (
-        <div className="w-full max-w-2xl bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 mb-8 text-center">
-          <div className="text-lg font-semibold text-green-700">恭喜！刷新了历史最佳记录 🎉</div>
-          <div className="text-sm text-gray-700 mt-1">比之前快了 {improveSeconds.toFixed(2)} 秒（{improvePercent.toFixed(1)}%）</div>
-          {/* 简易撒花效果 */}
-          <div className="pointer-events-none select-none absolute inset-0 flex items-center justify-center">
-            <div className="animate-ping w-24 h-24 rounded-full bg-green-300/40"></div>
-          </div>
-        </div>
-      )}
+      {/* 全屏覆盖的撒花 canvas，不占用布局 */}
+      <canvas
+        ref={confettiCanvasRef}
+        style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 10, width: '100%', height: '100%' }}
+      />
 
       {/* 统计调试信息（默认隐藏，按需开启） */}
       {/* <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 w-full max-w-2xl mb-8">

@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="./vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Lottie web player for confetti animation -->
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <!-- dotLottie-web via CDN ESM → attach to window for app use -->
+    <script type="module">
+      import { DotLottie } from 'https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web/+esm';
+      window.DotLottie = DotLottie;
+    </script>
     <title>计算挑战赛</title>
   </head>
   <body>
