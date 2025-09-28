@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Preload SFX to minimize first-play latency -->
+    <link rel="preload" as="audio" href="./sfx/correct.wav" />
+    <link rel="preload" as="audio" href="./sfx/wrong.wav" />
+    <link rel="preload" as="audio" href="./sfx/start.wav" />
+    <link rel="preload" as="audio" href="./sfx/success.mp3" />
+    <title>计算挑战赛</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>
