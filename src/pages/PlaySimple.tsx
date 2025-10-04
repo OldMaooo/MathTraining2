@@ -3,11 +3,11 @@ import { GamificationService } from '../services/gamificationService';
 import { ToastManager } from '../components/Toast';
 import { colors } from '../styles/colors';
 
-// 动态加载Lottie
+  // 动态加载Lottie
 const loadLottie = async () => {
   try {
     // 加载Lottie player
-    if (!window.lottie) {
+    if (!(window as any).lottie) {
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js';
       document.head.appendChild(script);
@@ -15,9 +15,9 @@ const loadLottie = async () => {
     }
     
     // 加载DotLottie
-    if (!window.DotLottie) {
+    if (!(window as any).DotLottie) {
       const { DotLottie } = await import('https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web/+esm');
-      window.DotLottie = DotLottie;
+      (window as any).DotLottie = DotLottie;
     }
   } catch (error) {
     console.warn('Failed to load Lottie:', error);
@@ -331,7 +331,10 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     correctAnswer: number;
     userAnswer: number;
     isCorrect: boolean;
-    durationSec: number;
+    timeTaken: number;
+    displayText: string;
+    isFillBlank?: boolean;
+    blankPosition?: 'a' | 'b' | 'result';
   }>>([]);
   
   // 从localStorage加载配置并生成题目（支持自定义题集）
@@ -873,13 +876,13 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               
               console.log('保存历史记录-正确分支:', {
                 questionLogsLength: questionLogs.length,
-                currentQuestionLog,
+                questionLogs,
                 fullLogsLength: fullLogs.length,
                 fullLogs: fullLogs
               });
               
               // 更新questionLogs状态
-              setQuestionLogs(prevLogs => [...prevLogs, currentQuestionLog]);
+              setQuestionLogs(prevLogs => [...prevLogs, questionLogs]);
               const wrongDetails = fullLogs.filter(x => !x.isCorrect).sort((p, c) => c.durationSec - p.durationSec);
               const slowCorrectDetails = fullLogs.filter(x => x.isCorrect && x.durationSec >= 4).sort((p, c) => c.durationSec - p.durationSec);
               const record = {
@@ -965,13 +968,13 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               
               console.log('保存历史记录-错误分支:', {
                 questionLogsLength: questionLogs.length,
-                currentQuestionLog,
+                questionLogs,
                 fullLogsLength: fullLogs.length,
                 fullLogs: fullLogs
               });
               
               // 更新questionLogs状态
-              setQuestionLogs(prevLogs => [...prevLogs, currentQuestionLog]);
+              setQuestionLogs(prevLogs => [...prevLogs, questionLogs]);
               const wrongDetails = fullLogs.filter(x => !x.isCorrect).sort((p, c) => c.durationSec - p.durationSec);
               const slowCorrectDetails = fullLogs.filter(x => x.isCorrect && x.durationSec >= 4).sort((p, c) => c.durationSec - p.durationSec);
               const record = {
