@@ -93,7 +93,7 @@ function App() {
     <ThemeProvider>
       <div className="App">
         <TopNavigation onNavigate={handleNavigate} />
-        {currentState === 'start' && <Start onStart={handleStart} onHistory={handleHistory} onWrongQuestions={handleWrongQuestions} onAddRecord={handleAddRecord} onHeaderTest={handleHeaderTest} />}
+        {currentState === 'start' && <Start onStart={handleStart} onHeaderTest={handleHeaderTest} />}
         {currentState === 'play' && <PlaySimple onFinish={handleFinish} onExit={handleExit} />}
         {currentState === 'review' && <Review onRestart={handleRestart} />}
         {currentState === 'history' && <History onBack={handleBack} />}

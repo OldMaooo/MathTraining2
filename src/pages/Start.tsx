@@ -3,12 +3,10 @@ import React, { useState, useEffect } from 'react';
 interface StartProps {
   onStart: () => void;
   onTest: () => void;
-  onHistory: () => void;
-  onWrongQuestions: () => void;
   onHeaderTest?: () => void;
 }
 
-export const Start: React.FC<StartProps> = ({ onStart, onHistory, onWrongQuestions, onHeaderTest }) => {
+export const Start: React.FC<StartProps> = ({ onStart, onHeaderTest }) => {
   
   const [config, setConfig] = useState({
     questionType: 'borrow' as 'borrow' | 'carry' | 'mixed' | 'multiply' | 'divide' | 'multiply_divide' | 'all_four' | 'fill_add_subtract' | 'fill_multiply_divide',
@@ -107,24 +105,6 @@ export const Start: React.FC<StartProps> = ({ onStart, onHistory, onWrongQuestio
       }}
     >
       {/* 顶部按钮栏 */}
-      <div className="flex justify-end items-center mb-8">
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={onWrongQuestions}
-            className="text-2xl hover:text-gray-600 dark:text-gray-400 transition-colors"
-            title="错题管理"
-          >
-            📚
-          </button>
-          <button
-            onClick={onHistory}
-            className="text-2xl hover:text-gray-600 dark:text-gray-400 transition-colors"
-            title="历史记录"
-          >
-            ⏰
-          </button>
-        </div>
-      </div>
       
       {/* 主要内容区域 */}
       <div className="flex justify-center">

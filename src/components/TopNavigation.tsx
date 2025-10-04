@@ -3,6 +3,7 @@ import { GamificationService } from '../services/gamificationService';
 import { useTheme } from '../contexts/ThemeContext';
 import { AccountService } from '../services/accountService';
 import type { Account } from '../services/accountService';
+import { getCurrentLevel, getNextLevel } from '../types/gamification';
 
 interface TopNavigationProps {
   onNavigate: (page: string) => void;
@@ -16,6 +17,10 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
   const [showTaskCenter, setShowTaskCenter] = useState(false);
   const [showExpTooltip, setShowExpTooltip] = useState(false);
   const [showStreakTooltip, setShowStreakTooltip] = useState(false);
+  const [expTooltipTimeout, setExpTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [streakTooltipTimeout, setStreakTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [taskCenterTimeout, setTaskCenterTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [userMenuTimeout, setUserMenuTimeout] = useState<NodeJS.Timeout | null>(null);
   const [currentAccount, setCurrentAccount] = useState<Account | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
@@ -70,13 +75,121 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
     }
   }, []);
 
+  // 清理超时
+  useEffect(() => {
+    return () => {
+      if (expTooltipTimeout) clearTimeout(expTooltipTimeout);
+      if (streakTooltipTimeout) clearTimeout(streakTooltipTimeout);
+      if (taskCenterTimeout) clearTimeout(taskCenterTimeout);
+      if (userMenuTimeout) clearTimeout(userMenuTimeout);
+    };
+  }, [expTooltipTimeout, streakTooltipTimeout, taskCenterTimeout, userMenuTimeout]);
+
   const gamificationService = GamificationService.getInstance();
-  const levelInfo = gamificationService.getLevelInfo(profile.level);
-  const nextLevelInfo = gamificationService.getLevelInfo(profile.level + 1);
+  
+  // 统一的浮层管理函数 - 实现互斥显示
+  const showTooltip = (tooltipType: 'exp' | 'streak' | 'task' | 'user') => {
+    // 先关闭所有其他浮层
+    setShowExpTooltip(false);
+    setShowStreakTooltip(false);
+    setShowTaskCenter(false);
+    setShowUserMenu(false);
+    setShowAccountMenu(false);
+    
+    // 清除所有超时
+    if (expTooltipTimeout) clearTimeout(expTooltipTimeout);
+    if (streakTooltipTimeout) clearTimeout(streakTooltipTimeout);
+    if (taskCenterTimeout) clearTimeout(taskCenterTimeout);
+    if (userMenuTimeout) clearTimeout(userMenuTimeout);
+    
+    // 显示指定的浮层
+    switch (tooltipType) {
+      case 'exp':
+        setShowExpTooltip(true);
+        break;
+      case 'streak':
+        setShowStreakTooltip(true);
+        break;
+      case 'task':
+        setShowTaskCenter(true);
+        break;
+      case 'user':
+        setShowUserMenu(true);
+        break;
+    }
+  };
+
+  const hideTooltip = (tooltipType: 'exp' | 'streak' | 'task' | 'user') => {
+    const timeout = setTimeout(() => {
+      switch (tooltipType) {
+        case 'exp':
+          setShowExpTooltip(false);
+          break;
+        case 'streak':
+          setShowStreakTooltip(false);
+          break;
+        case 'task':
+          setShowTaskCenter(false);
+          break;
+        case 'user':
+          setShowUserMenu(false);
+          break;
+      }
+    }, 200);
+
+    // 保存超时引用
+    switch (tooltipType) {
+      case 'exp':
+        setExpTooltipTimeout(timeout);
+        break;
+      case 'streak':
+        setStreakTooltipTimeout(timeout);
+        break;
+      case 'task':
+        setTaskCenterTimeout(timeout);
+        break;
+      case 'user':
+        setUserMenuTimeout(timeout);
+        break;
+    }
+  };
+
+  const cancelHideTooltip = (tooltipType: 'exp' | 'streak' | 'task' | 'user') => {
+    switch (tooltipType) {
+      case 'exp':
+        if (expTooltipTimeout) {
+          clearTimeout(expTooltipTimeout);
+          setExpTooltipTimeout(null);
+        }
+        break;
+      case 'streak':
+        if (streakTooltipTimeout) {
+          clearTimeout(streakTooltipTimeout);
+          setStreakTooltipTimeout(null);
+        }
+        break;
+      case 'task':
+        if (taskCenterTimeout) {
+          clearTimeout(taskCenterTimeout);
+          setTaskCenterTimeout(null);
+        }
+        break;
+      case 'user':
+        if (userMenuTimeout) {
+          clearTimeout(userMenuTimeout);
+          setUserMenuTimeout(null);
+        }
+        break;
+    }
+  };
+  
+  // 使用经验值动态计算当前等级和下一等级
+  const currentLevel = getCurrentLevel(profile.exp);
+  const nextLevel = getNextLevel(profile.exp);
   
   // 计算经验进度 - 修复计数方式
-  const currentLevelExp = levelInfo.expRequired;
-  const nextLevelExp = nextLevelInfo?.expRequired || levelInfo.expRequired;
+  const currentLevelExp = currentLevel.expRequired;
+  const nextLevelExp = nextLevel?.expRequired || currentLevel.expRequired;
   const expProgress = {
     current: Math.max(0, profile.exp - currentLevelExp), // 当前等级内的经验
     total: nextLevelExp - currentLevelExp, // 当前等级需要的总经验
@@ -171,14 +284,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
             {/* 经验值 */}
             <div 
               className="relative flex items-center space-x-1 cursor-pointer"
-              onMouseEnter={() => setShowExpTooltip(true)}
-              onMouseLeave={(e) => {
-                // 检查鼠标是否移动到浮层上
-                const relatedTarget = e.relatedTarget as HTMLElement;
-                if (!relatedTarget || !relatedTarget.closest('.exp-tooltip')) {
-                  setShowExpTooltip(false);
-                }
-              }}
+              onMouseEnter={() => showTooltip('exp')}
+              onMouseLeave={() => hideTooltip('exp')}
             >
               <div className="h-5 w-5 text-blue-600">🎓</div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -189,17 +296,17 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
               {showExpTooltip && (
                 <div 
                   className="exp-tooltip absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 z-50"
-                  onMouseEnter={() => setShowExpTooltip(true)}
-                  onMouseLeave={() => setShowExpTooltip(false)}
+                  onMouseEnter={() => cancelHideTooltip('exp')}
+                  onMouseLeave={() => hideTooltip('exp')}
                 >
                   <div className="text-center">
                     <div className="text-lg font-bold text-gray-900 dark:text-white">
-                      {levelInfo.name} (L{profile.level}-{profile.level + 1})
+                      {currentLevel.name} (L{currentLevel.level}-{nextLevel ? nextLevel.level : 'MAX'})
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                      {expProgress.current} / {expProgress.total} EXP
+                      {profile.exp} / {nextLevel ? nextLevel.expRequired : 'MAX'} EXP
                     </div>
-                    {nextLevelInfo && (
+                    {nextLevel && (
                       <>
                         <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mt-2">
                           <div 
@@ -208,7 +315,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                           />
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          还需 {Math.max(0, expProgress.total - expProgress.current)} EXP 升级
+                          还需 {Math.max(0, nextLevel.expRequired - profile.exp)} EXP 升级
                         </div>
                       </>
                     )}
@@ -220,13 +327,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
             {/* 连胜值 */}
             <div 
               className="relative flex items-center space-x-1 cursor-pointer"
-              onMouseEnter={() => setShowStreakTooltip(true)}
-              onMouseLeave={(e) => {
-                const relatedTarget = e.relatedTarget as HTMLElement;
-                if (!relatedTarget || !relatedTarget.closest('.streak-tooltip')) {
-                  setShowStreakTooltip(false);
-                }
-              }}
+              onMouseEnter={() => showTooltip('streak')}
+              onMouseLeave={() => hideTooltip('streak')}
             >
               <div className="h-5 w-5 text-orange-500">🔥</div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -237,8 +339,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
               {showStreakTooltip && (
                 <div 
                   className="streak-tooltip absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 z-50"
-                  onMouseEnter={() => setShowStreakTooltip(true)}
-                  onMouseLeave={() => setShowStreakTooltip(false)}
+                  onMouseEnter={() => cancelHideTooltip('streak')}
+                  onMouseLeave={() => hideTooltip('streak')}
                 >
                   <div className="text-center">
                     <div className="text-lg font-bold text-gray-900 dark:text-white">
@@ -270,13 +372,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
             {/* 任务中心 */}
             <div 
               className="relative flex items-center space-x-1 cursor-pointer"
-              onMouseEnter={() => setShowTaskCenter(true)}
-              onMouseLeave={(e) => {
-                const relatedTarget = e.relatedTarget as HTMLElement;
-                if (!relatedTarget || !relatedTarget.closest('.task-center')) {
-                  setShowTaskCenter(false);
-                }
-              }}
+              onMouseEnter={() => showTooltip('task')}
+              onMouseLeave={() => hideTooltip('task')}
             >
               <div className="h-5 w-5 text-purple-600">📋</div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -284,20 +381,13 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
               </span>
             </div>
 
-            {/* 深色模式切换 */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              title={theme === 'light' ? '切换到深色模式' : '切换到浅色模式'}
-            >
-              {theme === 'light' ? '🌙' : '☀️'}
-            </button>
 
             {/* 账号管理 */}
             <div className="relative">
               <button
                 className="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                onClick={() => setShowUserMenu(!showUserMenu)}
+                onMouseEnter={() => showTooltip('user')}
+                onMouseLeave={() => hideTooltip('user')}
               >
                 <span className="text-sm font-medium">{currentAccount?.name || '用户'}</span>
                 <span className="text-xs">▼</span>
@@ -305,7 +395,11 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
 
               {/* 用户菜单 */}
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                <div 
+                  className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+                  onMouseEnter={() => cancelHideTooltip('user')}
+                  onMouseLeave={() => hideTooltip('user')}
+                >
                   <div className="py-1">
                     {/* 账号切换 */}
                     <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
@@ -372,6 +466,20 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                     >
                       错题管理
                     </button>
+                    
+                    {/* 深色模式切换 */}
+                    <button
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => {
+                        toggleTheme();
+                        setShowUserMenu(false);
+                      }}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <span>{theme === 'light' ? '🌙' : '☀️'}</span>
+                        <span>{theme === 'light' ? '切换到深色模式' : '切换到浅色模式'}</span>
+                      </div>
+                    </button>
                   </div>
                 </div>
               )}
@@ -384,8 +492,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
       {showTaskCenter && (
         <div 
           className="task-center absolute top-16 right-4 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
-          onMouseEnter={() => setShowTaskCenter(true)}
-          onMouseLeave={() => setShowTaskCenter(false)}
+          onMouseEnter={() => cancelHideTooltip('task')}
+          onMouseLeave={() => hideTooltip('task')}
         >
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
