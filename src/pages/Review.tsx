@@ -776,6 +776,5 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
           </div>
         );
       })}
-    </div>
   );
 };
