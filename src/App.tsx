@@ -81,27 +81,11 @@ function App() {
 
   
   return (
-    <ThemeProvider>
-      <div className="App">
-        {/* 全局提示容器 */}
-        <ToastContainer />
-        
-
-        {/* 顶部导航 - 练习页面时隐藏 */}
-        {currentState !== 'play' && (
-          <TopNavigation onNavigate={handleNavigate} />
-        )}
-        
-        {currentState === 'start' && <StartTailwindTest onStart={handleStart} onTest={handleTest} onHistory={handleHistory} onWrongQuestions={handleWrongQuestions} />}
-        
-        {currentState === 'play' && <PlaySimple onFinish={handleFinish} onExit={handleExit} />}
-        {currentState === 'review' && <Review onRestart={handleRestart} />}
-        {currentState === 'test' && <TestComponent onBack={handleBack} />}
-        {currentState === 'history' && <History onBack={handleBack} />}
-        {currentState === 'wrong-questions' && <WrongQuestions onBack={handleBack} />}
-        {currentState === 'add-record' && <AddRecord onBack={handleBack} />}
-      </div>
-    </ThemeProvider>
+    <div className="App">
+      <h1>测试页面</h1>
+      <p>当前状态: {currentState}</p>
+      <button onClick={handleStart}>开始测试</button>
+    </div>
   );
 }
 
