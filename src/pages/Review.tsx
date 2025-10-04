@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { colors } from '../styles/colors';
+import { getCurrentLevel, getNextLevel, getExpProgress } from '../types/gamification';
 
 interface ReviewProps {
   onRestart: () => void;
@@ -150,6 +151,8 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
   const [totalTime, setTotalTime] = useState<number>(0);
   const [expDetail, setExpDetail] = useState<{ accuracy: number; totalTimeSec: number; correct: number; total: number; expGain: any } | null>(null);
   const [showQuestionAnalysis, setShowQuestionAnalysis] = useState(false);
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [levelUpAnimation, setLevelUpAnimation] = useState(false);
   const [questionLogs, setQuestionLogs] = useState<Array<{
     a: number;
     b: number;
@@ -415,6 +418,22 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
     return () => clearTimeout(t);
   }, []);
 
+  // 等级提升检测
+  useEffect(() => {
+    const userProfile = JSON.parse(localStorage.getItem('mp-user-profile') || '{"exp": 0, "level": 1}');
+    const currentLevel = getCurrentLevel(userProfile.exp);
+    
+    // 如果等级提升了
+    if (currentLevel.level > userProfile.level) {
+      setShowLevelUp(true);
+      setTimeout(() => setLevelUpAnimation(true), 100);
+      
+      // 更新用户等级
+      const updatedProfile = { ...userProfile, level: currentLevel.level };
+      localStorage.setItem('mp-user-profile', JSON.stringify(updatedProfile));
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-start pt-8 p-2 sm:p-6">
               {/* 顶部右侧：按钮组 */}
@@ -522,6 +541,46 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
               <div className="text-sm text-gray-500">本轮未读取到结算明细</div>
             )}
           </div>
+          
+          {/* 等级进度条 */}
+          {(() => {
+            const userProfile = JSON.parse(localStorage.getItem('mp-user-profile') || '{"exp": 0}');
+            const currentLevel = getCurrentLevel(userProfile.exp);
+            const nextLevel = getNextLevel(userProfile.exp);
+            const expProgress = getExpProgress(userProfile.exp);
+            
+            return (
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">等级进度</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    L{currentLevel.level} {currentLevel.name}
+                  </div>
+                </div>
+                {nextLevel ? (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                      <span>{userProfile.exp - currentLevel.expRequired} EXP</span>
+                      <span>{nextLevel.expRequired - currentLevel.expRequired} EXP</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                      <div 
+                        className="h-3 rounded-full transition-all duration-2000 ease-out bg-gradient-to-r from-blue-500 to-purple-600"
+                        style={{ width: `${expProgress}%` }}
+                      />
+                    </div>
+                    <div className="text-xs text-center text-gray-500 dark:text-gray-400">
+                      距离下一级还需 {nextLevel.expRequired - userProfile.exp} EXP
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-yellow-600 dark:text-yellow-400 font-semibold">
+                    🏆 已达到最高等级！
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           </div>
         </div>
       </div>
@@ -684,3 +743,37 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
             </div>
           );
         };
+
+      {/* 等级提升弹窗 */}
+      {showLevelUp && (() => {
+        const userProfile = JSON.parse(localStorage.getItem('mp-user-profile') || '{"exp": 0}');
+        const currentLevel = getCurrentLevel(userProfile.exp);
+        
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 text-center transform transition-all duration-500 ${
+              levelUpAnimation ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+            }`}>
+              <div className="text-6xl mb-4">🎉</div>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+                等级提升！
+              </h2>
+              <div className="text-lg text-gray-600 dark:text-gray-400 mb-4">
+                恭喜你升级到 <span className="font-bold text-blue-600 dark:text-blue-400">L{currentLevel.level} {currentLevel.name}</span>
+              </div>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                继续努力，向更高等级前进！
+              </div>
+              <button 
+                onClick={() => {
+                  setShowLevelUp(false);
+                  setLevelUpAnimation(false);
+                }}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                太棒了！
+              </button>
+            </div>
+          </div>
+        );
+      })()}

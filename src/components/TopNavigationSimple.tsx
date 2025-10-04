@@ -11,6 +11,7 @@ export const TopNavigationSimple: React.FC<TopNavigationProps> = ({ onNavigate }
   const [profile, setProfile] = useState({ level: 1, exp: 0, streak: 0 });
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showTaskCenter, setShowTaskCenter] = useState(false);
+  const [showStreakDetails, setShowStreakDetails] = useState(false);
   const [currentAccount, setCurrentAccount] = useState({ id: 'default', name: '用户', createdAt: Date.now(), lastActiveAt: Date.now() });
 
   // 安全地获取用户资料
@@ -49,6 +50,38 @@ export const TopNavigationSimple: React.FC<TopNavigationProps> = ({ onNavigate }
     percentage: Math.min(100, (profile.exp / 100) * 100)
   };
 
+  // 连胜状态计算
+  const today = new Date().getDay(); // 0=周日, 1=周一, ..., 6=周六
+  const todayIdx = today === 0 ? 6 : today - 1; // 转换为我们的索引：0=周一, 6=周日
+  
+  const weekLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+  
+  const weekDots = Array.from({ length: 7 }).map((_, idx) => {
+    const isToday = idx === todayIdx;
+    if (profile.streak === 0) {
+      return { isActive: false, isToday };
+    }
+    if (idx > todayIdx) { // Future dates cannot be active
+      return { isActive: false, isToday };
+    }
+    const daysFromToday = todayIdx - idx;
+    const isActive = daysFromToday >= 0 && daysFromToday < profile.streak;
+    return { isActive, isToday };
+  });
+
+  // 今日答题数统计
+  const correctAnswers = (() => {
+    try {
+      const history = JSON.parse(localStorage.getItem('mp-history') || '[]');
+      const today = new Date().toDateString();
+      return history
+        .filter((record: any) => new Date(record.timestamp).toDateString() === today)
+        .reduce((sum: number, record: any) => sum + (record.correct || 0), 0);
+    } catch {
+      return 0;
+    }
+  })();
+
   return (
     <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-4 py-3">
       <div className="flex items-center justify-between">
@@ -77,9 +110,54 @@ export const TopNavigationSimple: React.FC<TopNavigationProps> = ({ onNavigate }
           </div>
 
           {/* 连胜 */}
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600 dark:text-gray-300">连胜:</span>
-            <span className="font-semibold text-orange-600 dark:text-orange-400">{profile.streak}</span>
+          <div className="relative">
+            <button
+              onMouseEnter={() => setShowStreakDetails(true)}
+              onMouseLeave={() => setShowStreakDetails(false)}
+              className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded transition-colors"
+            >
+              <span className="text-sm text-gray-600 dark:text-gray-300">连胜:</span>
+              <span className="font-semibold text-orange-600 dark:text-orange-400">{profile.streak}</span>
+            </button>
+            {showStreakDetails && (
+              <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-gray-700 rounded-md shadow-lg py-3 z-50">
+                <div className="px-4 py-2">
+                  <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">本周连胜状态</div>
+                  <div className="flex justify-between items-center mb-3">
+                    {weekDots.map((dot, idx) => (
+                      <div key={idx} className="flex flex-col items-center">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                          dot.isActive 
+                            ? (dot.isToday ? 'bg-green-500' : 'bg-green-500/60') 
+                            : 'bg-gray-300 dark:bg-gray-600'
+                        }`}>
+                          {dot.isActive && (
+                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className={`text-xs mt-1 ${dot.isToday ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-500 dark:text-gray-400'}`}>
+                          {weekLabels[idx]}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{correctAnswers}</div>
+                        <div className="text-gray-600 dark:text-gray-400">今日答题数</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-green-600 dark:text-green-400">{Math.floor(correctAnswers / 10)}</div>
+                        <div className="text-gray-600 dark:text-gray-400">今日轮数</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

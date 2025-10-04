@@ -184,6 +184,9 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     action: string;
     data: any;
   }>>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [debugStatus, setDebugStatus] = useState('空闲');
+  const [isSubmittingHistory, setIsSubmittingHistory] = useState<Array<{timestamp: string, status: string}>>([]);
 
   // 游戏化与提示
   const gamification = GamificationService.getInstance();
@@ -246,6 +249,37 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     }, 100); // 每100ms更新一次
     return () => clearInterval(interval);
   }, []);
+
+  // 管理员模式检测
+  useEffect(() => {
+    const checkAdmin = () => {
+      const adminKey = localStorage.getItem('mp-admin-mode');
+      setIsAdmin(adminKey === 'true');
+    };
+    checkAdmin();
+    
+    // 监听存储变化
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'mp-admin-mode') {
+        checkAdmin();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // 更新调试状态
+  useEffect(() => {
+    if (isSubmitting) {
+      setDebugStatus('提交中');
+      setIsSubmittingHistory(prev => [...prev.slice(-4), {
+        timestamp: new Date().toLocaleTimeString(),
+        status: '提交中'
+      }]);
+    } else {
+      setDebugStatus('空闲');
+    }
+  }, [isSubmitting]);
 
   // 开场动画逻辑
   useEffect(() => {
@@ -1476,42 +1510,26 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
         </div>
       </div>
       
-        {/* 调试面板 - 已隐藏 */}
-        {false && (
-          <div className="fixed top-4 right-4 w-80 max-h-96 bg-black/90 text-white text-xs p-3 rounded-lg overflow-y-auto z-50">
-            <div className="flex justify-between items-center mb-2">
-              <div className="font-bold text-yellow-400">调试面板</div>
-              <div className="space-x-2">
-                <button 
-                  onClick={() => {
-                    const debugText = debugInfo.map(info => 
-                      `[${info.timestamp}] ${info.action}: ${typeof info.data === 'object' ? JSON.stringify(info.data, null, 2) : info.data}`
-                    ).join('\n');
-                    navigator.clipboard.writeText(debugText);
-                    alert('调试信息已复制到剪贴板');
-                  }}
-                  className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                >
-                  复制
-                </button>
-                <button 
-                  onClick={() => setDebugInfo([])}
-                  className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
-                >
-                  清空
-                </button>
+        {/* 管理员调试面板 */}
+        {isAdmin && (
+          <div className="fixed top-4 right-4 bg-black/80 text-white p-3 rounded-lg text-xs max-w-xs z-50">
+            <div className="font-bold mb-2">🔧 调试面板</div>
+            <div className="space-y-1">
+              <div>状态: {debugStatus}</div>
+              <div>题目: {currentQuestion + 1}/{questions.length}</div>
+              <div>答案: {userAnswer || '未输入'}</div>
+              <div>提交中: {isSubmitting ? '是' : '否'}</div>
+              <div className="text-xs text-gray-300 mt-2">
+                提交历史: {isSubmittingHistory.map(h => `${h.timestamp}:${h.status}`).join(', ')}
               </div>
             </div>
-            <div className="space-y-1">
-              {debugInfo.map((info, index) => (
-                <div key={index} className="border-b border-gray-600 pb-1">
-                  <div className="text-yellow-300">{info.timestamp}</div>
-                  <div className="text-green-400 font-semibold">{info.action}</div>
-                  <div className="text-gray-300 text-xs">
-                    {typeof info.data === 'object' ? JSON.stringify(info.data, null, 2) : info.data}
-                  </div>
-                </div>
-              ))}
+            <div className="mt-2 pt-2 border-t border-gray-600">
+              <button 
+                onClick={() => setIsAdmin(false)}
+                className="text-xs bg-red-600 px-2 py-1 rounded"
+              >
+                关闭调试
+              </button>
             </div>
           </div>
         )}
