@@ -29,6 +29,11 @@ export const Start: React.FC<StartProps> = ({ onStart, onTest, onHistory, onWron
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
       }}
     >
+      {/* GitHub同步测试标识 */}
+      <div className="mb-4 p-3 bg-green-500 dark:bg-green-600 text-white rounded-lg text-center text-lg font-bold shadow-lg">
+        🚀 GitHub同步测试 - 版本: 2025-10-04-12:30 | 状态: 已同步 ✅
+      </div>
+      
       {/* 深色模式测试条 */}
       <div className="mb-4 p-2 bg-yellow-300 dark:bg-cyan-300 text-black rounded text-center text-sm font-bold">
         🌈 深色模式测试：黄色=浅色模式，青色=深色模式 | 当前主题: {theme}
