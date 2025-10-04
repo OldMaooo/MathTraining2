@@ -500,7 +500,7 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
             <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">经验结算</div>
             {expDetail ? (
               <div className="text-sm text-gray-700 dark:text-gray-300">
-                <div className="text-base font-bold ${colors.status.success} mb-2">总计：+{expDetail.expGain?.total || 0} EXP</div>
+                <div className={`text-base font-bold ${colors.status.success} mb-2`}>总计：+{expDetail.expGain?.total || 0} EXP</div>
                 <div className="space-y-1">
                   {/* 明细展示 */}
                   {(() => {
@@ -527,7 +527,7 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
                         {items.map((it, idx) => (
                           <li key={idx} className="flex justify-between">
                             <span>{it.label}</span>
-                            <span className="font-semibold ${colors.status.success}">+{it.value}</span>
+                            <span className={`font-semibold ${colors.status.success}`}>+{it.value}</span>
                           </li>
                         ))}
                       </ul>
@@ -712,13 +712,13 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
                                 {log.isCorrect ? (
                                   <span>
                                     <span className="text-gray-800 dark:text-gray-200">{log.displayText.replace('?', '')}</span>
-                                    <span className="${colors.status.success} font-semibold">{log.correctAnswer}</span>
+                                    <span className={`${colors.status.success} font-semibold`}>{log.correctAnswer}</span>
                                   </span>
                                 ) : (
                                   <span>
                                     <span className="text-gray-800 dark:text-gray-200">{log.displayText.replace('?', '')}</span>
-                                    <span className="${colors.status.success} font-semibold">{log.correctAnswer}</span>
-                                    <span className="${colors.status.error}"> （{log.userAnswer}）</span>
+                                    <span className={`${colors.status.success} font-semibold`}>{log.correctAnswer}</span>
+                                    <span className={`${colors.status.error}`}> （{log.userAnswer}）</span>
                                   </span>
                                 )}
                               </td>
@@ -740,8 +740,6 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
                   </div>
                 </div>
               )}
-            </div>
-          )}
 
       {/* 等级提升弹窗 */}
       {showLevelUp && (() => {
@@ -775,7 +773,7 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
             </div>
           </div>
         );
-      })}
+      })()}
     </div>
   );
 };
