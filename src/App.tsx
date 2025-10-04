@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { Start } from './pages/Start';
-import { StartTailwindTest } from './pages/StartTailwindTest';
-import { Play } from './pages/Play';
+// import { StartTailwindTest } from './pages/StartTailwindTest';
+// import { Play } from './pages/Play';
 import { PlaySimple } from './pages/PlaySimple';
 import { Review } from './pages/Review';
-import { ReviewTest } from './pages/ReviewTest';
-import { TestComponent } from './pages/TestComponent';
+// import { ReviewTest } from './pages/ReviewTest';
+// import { TestComponent } from './pages/TestComponent';
 import { History } from './pages/History';
 import { WrongQuestions } from './pages/WrongQuestions';
 import { AddRecord } from './pages/AddRecord';
-import { TopNavigationSimple as TopNavigation } from './components/TopNavigationSimple';
-import { ToastContainer } from './components/ToastContainer';
+// import { HeaderTest } from './pages/HeaderTest';
+// import { SimpleTest } from './pages/SimpleTest';
+// import { MinimalTest } from './pages/MinimalTest';
+import { TopNavigation } from './components/TopNavigation';
+// import { ToastContainer } from './components/ToastContainer';
 import { ThemeProvider } from './contexts/ThemeContext';
 
-type AppState = 'start' | 'play' | 'review' | 'test' | 'history' | 'wrong-questions' | 'add-record';
+type AppState = 'start' | 'play' | 'review' | 'test' | 'history' | 'wrong-questions' | 'add-record' | 'header-test' | 'simple-test' | 'minimal-test';
 
 function App() {
   const [currentState, setCurrentState] = useState<AppState>('start');
@@ -55,6 +58,10 @@ function App() {
     setCurrentState('add-record');
   };
 
+  const handleHeaderTest = () => {
+    setCurrentState('header-test');
+  };
+
   const handleNavigate = (page: string) => {
     if (page === 'home') {
       setCurrentState('start');
@@ -81,26 +88,20 @@ function App() {
   });
 
   
+  
   return (
     <ThemeProvider>
       <div className="App">
-        {/* 全局提示容器 */}
-        <ToastContainer />
-        
-
-        {/* 顶部导航 - 练习页面时隐藏 */}
-        {currentState !== 'play' && (
-          <TopNavigation onNavigate={handleNavigate} />
-        )}
-        
-        {currentState === 'start' && <Start onStart={handleStart} onTest={handleTest} onHistory={handleHistory} onWrongQuestions={handleWrongQuestions} />}
-        
+        <TopNavigation onNavigate={handleNavigate} />
+        {currentState === 'start' && <Start onStart={handleStart} onHistory={handleHistory} onWrongQuestions={handleWrongQuestions} onAddRecord={handleAddRecord} onHeaderTest={handleHeaderTest} />}
         {currentState === 'play' && <PlaySimple onFinish={handleFinish} onExit={handleExit} />}
-        {currentState === 'review' && <ReviewTest onRestart={handleRestart} />}
-        {currentState === 'test' && <TestComponent onBack={handleBack} />}
+        {currentState === 'review' && <Review onRestart={handleRestart} />}
         {currentState === 'history' && <History onBack={handleBack} />}
         {currentState === 'wrong-questions' && <WrongQuestions onBack={handleBack} />}
         {currentState === 'add-record' && <AddRecord onBack={handleBack} />}
+        {currentState === 'header-test' && <div>Header Test page coming soon...</div>}
+        {currentState === 'simple-test' && <div>Simple Test page coming soon...</div>}
+        {currentState === 'minimal-test' && <div>Minimal Test page coming soon...</div>}
       </div>
     </ThemeProvider>
   );

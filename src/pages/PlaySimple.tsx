@@ -16,11 +16,15 @@ const loadLottie = async () => {
     
     // 加载DotLottie
     if (!(window as any).DotLottie) {
-      const { DotLottie } = await import('https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web/+esm');
-      (window as any).DotLottie = DotLottie;
+      try {
+        // const { DotLottie } = await import('https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web/+esm');
+        // (window as any).DotLottie = DotLottie;
+      } catch (importError) {
+        console.warn('Failed to load DotLottie:', importError);
+      }
     }
   } catch (error) {
-    console.warn('Failed to load Lottie:', error);
+    console.warn('Failed to load Lottie:', error as Error);
   }
 };
 
@@ -188,6 +192,21 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
   const [debugStatus, setDebugStatus] = useState('空闲');
   const [isSubmittingHistory, setIsSubmittingHistory] = useState<Array<{timestamp: string, status: string}>>([]);
 
+  // 管理员模式激活快捷键
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ctrl + Shift + A 激活管理员模式
+      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+        e.preventDefault();
+        setIsAdmin(prev => !prev);
+        addDebugInfo('管理员模式切换', { isAdmin: !isAdmin });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isAdmin]);
+
   // 游戏化与提示
   const gamification = GamificationService.getInstance();
   const toast = ToastManager.getInstance();
@@ -237,7 +256,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       setDebugInfo(prev => [...prev.slice(-9), { timestamp, action, data }]);
       console.log(`[${timestamp}] ${action}:`, data);
     } catch (error) {
-      console.error('addDebugInfo error:', error);
+      console.error('addDebugInfo error:', error as Error);
       console.log(`[DEBUG ERROR] ${action}:`, data);
     }
   };
@@ -801,7 +820,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           const updatedLogs = [...questionLogs, questionLog];
           localStorage.setItem('mp-question-logs', JSON.stringify(updatedLogs));
         } catch (error) {
-          console.error('保存题目日志失败:', error);
+          console.error('保存题目日志失败:', error as Error);
         }
         
         // 如果是错题，增加5秒惩罚时间
@@ -823,7 +842,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             wrongQuestions.push(wrongQuestion);
             localStorage.setItem('mp-wrong-questions', JSON.stringify(wrongQuestions));
           } catch (error) {
-            console.error('保存错题失败:', error);
+            console.error('保存错题失败:', error as Error);
           }
         }
         
@@ -870,7 +889,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                   fullLogs = JSON.parse(storedLogs);
                 }
               } catch (error) {
-                console.error('获取题目日志失败:', error);
+                console.error('获取题目日志失败:', error as Error);
                 fullLogs = [];
               }
               
@@ -882,7 +901,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               });
               
               // 更新questionLogs状态
-              setQuestionLogs(prevLogs => [...prevLogs, questionLogs]);
+              setQuestionLogs(prevLogs => [...prevLogs, ...questionLogs]);
               const wrongDetails = fullLogs.filter(x => !x.isCorrect).sort((p, c) => c.durationSec - p.durationSec);
               const slowCorrectDetails = fullLogs.filter(x => x.isCorrect && x.durationSec >= 4).sort((p, c) => c.durationSec - p.durationSec);
               const record = {
@@ -962,7 +981,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                   fullLogs = JSON.parse(storedLogs);
                 }
               } catch (error) {
-                console.error('获取题目日志失败:', error);
+                console.error('获取题目日志失败:', error as Error);
                 fullLogs = [];
               }
               
@@ -974,7 +993,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               });
               
               // 更新questionLogs状态
-              setQuestionLogs(prevLogs => [...prevLogs, questionLogs]);
+              setQuestionLogs(prevLogs => [...prevLogs, ...questionLogs]);
               const wrongDetails = fullLogs.filter(x => !x.isCorrect).sort((p, c) => c.durationSec - p.durationSec);
               const slowCorrectDetails = fullLogs.filter(x => x.isCorrect && x.durationSec >= 4).sort((p, c) => c.durationSec - p.durationSec);
               const record = {
@@ -1125,7 +1144,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       const updatedLogs = [...questionLogs, questionLog];
       localStorage.setItem('mp-question-logs', JSON.stringify(updatedLogs));
     } catch (error) {
-      console.error('保存题目日志失败:', error);
+      console.error('保存题目日志失败:', error as Error);
     }
     
     // 如果是错题，增加5秒惩罚时间并保存到错题集
@@ -1165,7 +1184,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           
           addDebugInfo('错题对象创建完成', { wrongQuestion });
         } catch (error) {
-          addDebugInfo('错题对象创建失败', { error: error.message, questionLog });
+          addDebugInfo('错题对象创建失败', { error: (error as Error).message, questionLog });
           return; // 如果创建失败，直接返回
         }
         
@@ -1188,14 +1207,14 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           localStorage.setItem('mp-wrong-questions', jsonString);
           addDebugInfo('错题保存成功', { wrongQuestionsLength: wrongQuestions.length });
         } catch (error) {
-          console.error('保存错题失败:', error);
-          addDebugInfo('错题保存失败', { error: error.message, stack: error.stack });
+          console.error('保存错题失败:', error as Error);
+          addDebugInfo('错题保存失败', { error: (error as Error).message, stack: (error as Error).stack });
         }
         
         addDebugInfo('错题处理完成', { isCorrect, questionLog });
       } catch (error) {
-        console.error('错题处理整体失败:', error);
-        addDebugInfo('错题处理整体失败', { error: error.message, stack: error.stack });
+        console.error('错题处理整体失败:', error as Error);
+        addDebugInfo('错题处理整体失败', { error: (error as Error).message, stack: (error as Error).stack });
       }
     }
     
@@ -1267,7 +1286,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                   fullLogs = JSON.parse(storedLogs);
                 }
               } catch (error) {
-                console.error('获取题目日志失败:', error);
+                console.error('获取题目日志失败:', error as Error);
                 fullLogs = [];
               }
           
@@ -1307,7 +1326,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             savedRecordQuestionLogsLength: record.questionLogs.length
           });
         } catch (error) {
-          console.error('保存历史记录失败:', error);
+          console.error('保存历史记录失败:', error as Error);
         }
         // 重置提交状态，避免停留在“提交中”
         setIsSubmitting(false);
@@ -1394,7 +1413,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                   fullLogs = JSON.parse(storedLogs);
                 }
               } catch (error) {
-                console.error('获取题目日志失败:', error);
+                console.error('获取题目日志失败:', error as Error);
                 fullLogs = [];
               }
           
@@ -1434,7 +1453,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             savedRecordQuestionLogsLength: record.questionLogs.length
           });
         } catch (error) {
-          console.error('保存历史记录失败:', error);
+          console.error('保存历史记录失败:', error as Error);
         }
         
         onFinish();
@@ -1528,9 +1547,23 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               </div>
             </div>
             <div className="mt-2 pt-2 border-t border-gray-600">
+              <div className="flex space-x-2 mb-2">
+                <button 
+                  onClick={() => playSfx('correct')}
+                  className="text-xs bg-green-600 px-2 py-1 rounded"
+                >
+                  测试答对音效
+                </button>
+                <button 
+                  onClick={() => playSfx('wrong')}
+                  className="text-xs bg-red-600 px-2 py-1 rounded"
+                >
+                  测试答错音效
+                </button>
+              </div>
               <button 
                 onClick={() => setIsAdmin(false)}
-                className="text-xs bg-red-600 px-2 py-1 rounded"
+                className="text-xs bg-gray-600 px-2 py-1 rounded w-full"
               >
                 关闭调试
               </button>

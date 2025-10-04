@@ -5,9 +5,10 @@ interface StartProps {
   onTest: () => void;
   onHistory: () => void;
   onWrongQuestions: () => void;
+  onHeaderTest?: () => void;
 }
 
-export const Start: React.FC<StartProps> = ({ onStart, onHistory, onWrongQuestions }) => {
+export const Start: React.FC<StartProps> = ({ onStart, onHistory, onWrongQuestions, onHeaderTest }) => {
   
   const [config, setConfig] = useState({
     questionType: 'borrow' as 'borrow' | 'carry' | 'mixed' | 'multiply' | 'divide' | 'multiply_divide' | 'all_four' | 'fill_add_subtract' | 'fill_multiply_divide',
@@ -307,6 +308,16 @@ export const Start: React.FC<StartProps> = ({ onStart, onHistory, onWrongQuestio
           >
             🚀 开始练习
           </button>
+
+          {/* 头部测试按钮 */}
+          {onHeaderTest && (
+            <button
+              onClick={onHeaderTest}
+              className="w-full bg-gradient-to-br from-green-500 to-teal-500 text-white text-lg font-bold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl mb-4"
+            >
+              🧪 测试头部组件
+            </button>
+          )}
 
           {/* 错题练习按钮 */}
           {hasWrongSet && (

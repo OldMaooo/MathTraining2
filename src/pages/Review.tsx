@@ -127,6 +127,10 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
   // 成功音效
   const sfxBase = (import.meta as any).env?.BASE_URL || '/';
   const successRef = useRef<HTMLAudioElement | null>(null);
+  
+  // 撒花动画
+  const confettiCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
   const playSuccess = () => {
     try {
       // 你当前的文件是 success.mp3，这里做多格式回退的解析
@@ -170,7 +174,6 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
   // Confetti (dotLottie) - 总是播放
   const lottieBase = (import.meta as any).env?.BASE_URL || '/';
   const confettiSrc = `${lottieBase}sfx/Confetti.lottie`;
-  const confettiCanvasRef = useRef<HTMLCanvasElement | null>(null);
   useEffect(() => {
     const canvas = confettiCanvasRef.current;
     const DotLottie = (window as any).DotLottie;

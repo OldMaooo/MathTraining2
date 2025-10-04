@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { GamificationService } from '../services/gamificationService';
 import { useTheme } from '../contexts/ThemeContext';
-import { AccountService, Account } from '../services/accountService';
+import { AccountService } from '../services/accountService';
+import type { Account } from '../services/accountService';
 
 interface TopNavigationProps {
   onNavigate: (page: string) => void;
 }
 
 export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
+  
   const { theme, toggleTheme } = useTheme();
-  const [profile, setProfile] = useState(GamificationService.getInstance().getUserProfile());
+  const [profile, setProfile] = useState({ level: 1, exp: 0, streak: 0 });
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showTaskCenter, setShowTaskCenter] = useState(false);
   const [showExpTooltip, setShowExpTooltip] = useState(false);
@@ -20,16 +22,24 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
   const [newAccountName, setNewAccountName] = useState('');
 
   useEffect(() => {
-    const gamificationService = GamificationService.getInstance();
-    const refresh = () => {
-      const p = gamificationService.getUserProfile();
-      console.log('[TopNavigation] profile refreshed', p);
-      setProfile(p);
-    };
-    refresh();
-    const onUpdated = () => refresh();
-    window.addEventListener('mp-profile-updated', onUpdated as any);
-    return () => window.removeEventListener('mp-profile-updated', onUpdated as any);
+    try {
+      const gamificationService = GamificationService.getInstance();
+      const refresh = () => {
+        try {
+          const p = gamificationService.getUserProfile();
+          console.log('[TopNavigation] profile refreshed', p);
+          setProfile(p);
+        } catch (error) {
+          console.error('Error refreshing profile:', error);
+        }
+      };
+      refresh();
+      const onUpdated = () => refresh();
+      window.addEventListener('mp-profile-updated', onUpdated as any);
+      return () => window.removeEventListener('mp-profile-updated', onUpdated as any);
+    } catch (error) {
+      console.error('Error in profile useEffect:', error);
+    }
   }, []);
 
   // 账号管理
@@ -64,13 +74,13 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
   const levelInfo = gamificationService.getLevelInfo(profile.level);
   const nextLevelInfo = gamificationService.getLevelInfo(profile.level + 1);
   
-  // 计算经验进度
+  // 计算经验进度 - 修复计数方式
   const currentLevelExp = levelInfo.expRequired;
   const nextLevelExp = nextLevelInfo?.expRequired || levelInfo.expRequired;
   const expProgress = {
-    current: profile.exp - currentLevelExp,
-    total: nextLevelExp - currentLevelExp,
-    percentage: nextLevelExp > currentLevelExp ? ((profile.exp - currentLevelExp) / (nextLevelExp - currentLevelExp)) * 100 : 100
+    current: Math.max(0, profile.exp - currentLevelExp), // 当前等级内的经验
+    total: nextLevelExp - currentLevelExp, // 当前等级需要的总经验
+    percentage: nextLevelExp > currentLevelExp ? Math.min(100, Math.max(0, ((profile.exp - currentLevelExp) / (nextLevelExp - currentLevelExp)) * 100)) : 100
   };
 
   // 生成周历数据
@@ -162,7 +172,13 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
             <div 
               className="relative flex items-center space-x-1 cursor-pointer"
               onMouseEnter={() => setShowExpTooltip(true)}
-              onMouseLeave={() => setShowExpTooltip(false)}
+              onMouseLeave={(e) => {
+                // 检查鼠标是否移动到浮层上
+                const relatedTarget = e.relatedTarget as HTMLElement;
+                if (!relatedTarget || !relatedTarget.closest('.exp-tooltip')) {
+                  setShowExpTooltip(false);
+                }
+              }}
             >
               <div className="h-5 w-5 text-blue-600">🎓</div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -171,24 +187,28 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
               
               {/* 经验值提示框 */}
               {showExpTooltip && (
-                <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 z-50">
+                <div 
+                  className="exp-tooltip absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 z-50"
+                  onMouseEnter={() => setShowExpTooltip(true)}
+                  onMouseLeave={() => setShowExpTooltip(false)}
+                >
                   <div className="text-center">
                     <div className="text-lg font-bold text-gray-900 dark:text-white">
-                      {levelInfo.name} (Lv.{profile.level})
+                      {levelInfo.name} (L{profile.level}-{profile.level + 1})
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                      {profile.exp} / {nextLevelInfo?.expRequired || 'MAX'} EXP
+                      {expProgress.current} / {expProgress.total} EXP
                     </div>
                     {nextLevelInfo && (
                       <>
-                        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mt-2">
                           <div 
                             className="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${expProgress.percentage}%` }}
                           />
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          还需 {nextLevelInfo.expRequired - profile.exp} EXP 升级
+                          还需 {Math.max(0, expProgress.total - expProgress.current)} EXP 升级
                         </div>
                       </>
                     )}
@@ -201,7 +221,12 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
             <div 
               className="relative flex items-center space-x-1 cursor-pointer"
               onMouseEnter={() => setShowStreakTooltip(true)}
-              onMouseLeave={() => setShowStreakTooltip(false)}
+              onMouseLeave={(e) => {
+                const relatedTarget = e.relatedTarget as HTMLElement;
+                if (!relatedTarget || !relatedTarget.closest('.streak-tooltip')) {
+                  setShowStreakTooltip(false);
+                }
+              }}
             >
               <div className="h-5 w-5 text-orange-500">🔥</div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -210,7 +235,11 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
               
               {/* 连胜提示框 */}
               {showStreakTooltip && (
-                <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 z-50">
+                <div 
+                  className="streak-tooltip absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 z-50"
+                  onMouseEnter={() => setShowStreakTooltip(true)}
+                  onMouseLeave={() => setShowStreakTooltip(false)}
+                >
                   <div className="text-center">
                     <div className="text-lg font-bold text-gray-900 dark:text-white">
                       {profile.streak}日连胜
@@ -242,7 +271,12 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
             <div 
               className="relative flex items-center space-x-1 cursor-pointer"
               onMouseEnter={() => setShowTaskCenter(true)}
-              onMouseLeave={() => setShowTaskCenter(false)}
+              onMouseLeave={(e) => {
+                const relatedTarget = e.relatedTarget as HTMLElement;
+                if (!relatedTarget || !relatedTarget.closest('.task-center')) {
+                  setShowTaskCenter(false);
+                }
+              }}
             >
               <div className="h-5 w-5 text-purple-600">📋</div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -348,7 +382,11 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
 
       {/* 任务中心弹窗 */}
       {showTaskCenter && (
-        <div className="absolute top-16 right-4 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+        <div 
+          className="task-center absolute top-16 right-4 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+          onMouseEnter={() => setShowTaskCenter(true)}
+          onMouseLeave={() => setShowTaskCenter(false)}
+        >
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">今日任务</h3>
