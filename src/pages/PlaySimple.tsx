@@ -1133,11 +1133,12 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       try {
         addDebugInfo('开始处理错题', { isCorrect, questionLog });
         
-        addDebugInfo('准备增加惩罚时间(扣剩余时间)', { before: timeLeft });
-        // 从剩余时间中扣除5秒
+        // 错题惩罚：扣除单题时长
+        const singleQuestionTime = parseInt(localStorage.getItem('timeLimit') || '5');
+        addDebugInfo('准备增加惩罚时间(扣单题时长)', { before: timeLeft, singleQuestionTime });
         setTimeLeft(prev => {
-          const next = Math.max(0, prev - 5);
-          addDebugInfo('惩罚完成(扣剩余时间)', { after: next });
+          const next = Math.max(0, prev - singleQuestionTime);
+          addDebugInfo('惩罚完成(扣单题时长)', { after: next });
           return next;
         });
         

@@ -18,6 +18,11 @@ export const Start: React.FC<StartProps> = ({ onStart, onHistory, onWrongQuestio
   
   const [hasWrongSet, setHasWrongSet] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
+  
+  // 影子状态管理输入值，防止清空所有数字
+  const [shadowQuestionCount, setShadowQuestionCount] = useState(config.questionCount.toString());
+  const [shadowTimeLimit, setShadowTimeLimit] = useState(config.timeLimit.toString());
+  const [shadowRange, setShadowRange] = useState(config.range.toString());
 
   useEffect(() => {
     const savedQuestionType = localStorage.getItem('questionType');
@@ -30,13 +35,19 @@ export const Start: React.FC<StartProps> = ({ onStart, onHistory, onWrongQuestio
       setConfig(prev => ({ ...prev, questionType: savedQuestionType as any }));
     }
     if (savedRange) {
-      setConfig(prev => ({ ...prev, range: parseInt(savedRange) }));
+      const rangeValue = parseInt(savedRange);
+      setConfig(prev => ({ ...prev, range: rangeValue }));
+      setShadowRange(rangeValue.toString());
     }
     if (savedQuestionCount) {
-      setConfig(prev => ({ ...prev, questionCount: parseInt(savedQuestionCount) }));
+      const countValue = parseInt(savedQuestionCount);
+      setConfig(prev => ({ ...prev, questionCount: countValue }));
+      setShadowQuestionCount(countValue.toString());
     }
     if (savedTimeLimit) {
-      setConfig(prev => ({ ...prev, timeLimit: parseInt(savedTimeLimit) }));
+      const timeValue = parseInt(savedTimeLimit);
+      setConfig(prev => ({ ...prev, timeLimit: timeValue }));
+      setShadowTimeLimit(timeValue.toString());
     }
     if (savedTestMode) {
       setIsTestMode(savedTestMode === 'true');
@@ -70,6 +81,21 @@ export const Start: React.FC<StartProps> = ({ onStart, onHistory, onWrongQuestio
 
   const handleConfigChange = (key: string, value: string | number) => {
     setConfig(prev => ({ ...prev, [key]: value }));
+  };
+
+  // 处理输入框失去焦点，防止清空所有数字
+  const handleBlur = (key: string, shadowValue: string, defaultValue: number) => {
+    const numValue = parseInt(shadowValue) || defaultValue;
+    setConfig(prev => ({ ...prev, [key]: numValue }));
+    
+    // 更新对应的影子状态
+    if (key === 'questionCount') {
+      setShadowQuestionCount(numValue.toString());
+    } else if (key === 'timeLimit') {
+      setShadowTimeLimit(numValue.toString());
+    } else if (key === 'range') {
+      setShadowRange(numValue.toString());
+    }
   };
   
   return (
@@ -141,8 +167,9 @@ export const Start: React.FC<StartProps> = ({ onStart, onHistory, onWrongQuestio
                 <input
                   type="number"
                   min="1"
-                  value={config.questionCount}
-                  onChange={(e) => handleConfigChange('questionCount', parseInt(e.target.value))}
+                  value={shadowQuestionCount}
+                  onChange={(e) => setShadowQuestionCount(e.target.value)}
+                  onBlur={() => handleBlur('questionCount', shadowQuestionCount, 10)}
                   className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-center bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <span className="text-gray-700 dark:text-gray-300">题</span>
@@ -173,8 +200,9 @@ export const Start: React.FC<StartProps> = ({ onStart, onHistory, onWrongQuestio
                 <input
                   type="number"
                   min="1"
-                  value={config.timeLimit}
-                  onChange={(e) => handleConfigChange('timeLimit', parseInt(e.target.value))}
+                  value={shadowTimeLimit}
+                  onChange={(e) => setShadowTimeLimit(e.target.value)}
+                  onBlur={() => handleBlur('timeLimit', shadowTimeLimit, 5)}
                   className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-center bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <span className="text-gray-700 dark:text-gray-300">秒</span>
@@ -244,8 +272,9 @@ export const Start: React.FC<StartProps> = ({ onStart, onHistory, onWrongQuestio
                 <input
                   type="number"
                   min="1"
-                  value={config.range}
-                  onChange={(e) => handleConfigChange('range', parseInt(e.target.value))}
+                  value={shadowRange}
+                  onChange={(e) => setShadowRange(e.target.value)}
+                  onBlur={() => handleBlur('range', shadowRange, 20)}
                   className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-center bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <span className="text-gray-700 dark:text-gray-300">以内</span>
