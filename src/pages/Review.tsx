@@ -741,8 +741,7 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
                 </div>
               )}
             </div>
-          );
-        )}
+          )}
 
       {/* 等级提升弹窗 */}
       {showLevelUp && (() => {
