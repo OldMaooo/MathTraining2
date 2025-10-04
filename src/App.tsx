@@ -4,6 +4,7 @@ import { StartTailwindTest } from './pages/StartTailwindTest';
 import { Play } from './pages/Play';
 import { PlaySimple } from './pages/PlaySimple';
 import { Review } from './pages/Review';
+import { ReviewTest } from './pages/ReviewTest';
 import { TestComponent } from './pages/TestComponent';
 import { History } from './pages/History';
 import { WrongQuestions } from './pages/WrongQuestions';
@@ -95,7 +96,7 @@ function App() {
         {currentState === 'start' && <Start onStart={handleStart} onTest={handleTest} onHistory={handleHistory} onWrongQuestions={handleWrongQuestions} />}
         
         {currentState === 'play' && <PlaySimple onFinish={handleFinish} onExit={handleExit} />}
-        {currentState === 'review' && <Review onRestart={handleRestart} />}
+        {currentState === 'review' && <ReviewTest onRestart={handleRestart} />}
         {currentState === 'test' && <TestComponent onBack={handleBack} />}
         {currentState === 'history' && <History onBack={handleBack} />}
         {currentState === 'wrong-questions' && <WrongQuestions onBack={handleBack} />}
