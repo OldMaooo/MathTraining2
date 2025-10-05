@@ -399,13 +399,10 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                               : day.hasStreak
                                 ? 'bg-green-500 text-white opacity-40' // 历史连胜：绿色+勾+透明度
                                 : day.isToday
-                                  ? 'bg-gray-200 text-gray-600' // 今日未完成：灰色
-                                  : 'bg-gray-100 text-gray-400' // 其他：浅灰色
+                                  ? 'border-2 border-gray-300 bg-transparent text-gray-600' // 今日未完成：空心圈+灰字
+                                  : 'border-2 border-gray-200 bg-transparent text-gray-400' // 其他：空心圈+浅灰字
                           }`}>
                             {day.isTodayStreak || day.hasStreak ? '✓' : day.dayName}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {!(day.isTodayStreak || day.hasStreak) ? day.dayName : ''}
                           </div>
                           {day.expValue > 0 && (
                             <div className="text-xs text-green-600 dark:text-green-400 font-medium">
@@ -576,19 +573,15 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
               {getTaskList().map(task => (
                 <div key={task.id} className="flex items-center justify-between py-2">
                   <div className="flex items-center space-x-2">
-                    <div className={`w-4 h-4 rounded-full border-2 ${
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-xs font-medium ${
                       task.completed 
-                        ? 'bg-green-500 border-green-500' 
-                        : 'border-gray-300 dark:border-gray-600'
+                        ? 'bg-green-500 border-green-500 text-white' 
+                        : 'border-2 border-gray-300 bg-transparent text-gray-500'
                     }`}>
-                      {task.completed && (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </div>
-                      )}
+                      {task.completed ? '✓' : ''}
                     </div>
                     <span className={`text-sm font-medium ${
-                      task.completed ? 'text-green-700 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'
+                      task.completed ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
                     }`}>
                       {task.name}
                     </span>
