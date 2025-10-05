@@ -241,6 +241,14 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
     const tasks = gamificationService.getDailyTasks();
     const taskList = [];
     
+    // 每日登录（第一个）
+    taskList.push({
+      id: 'daily_login',
+      name: '每日登录',
+      expReward: 1,
+      completed: tasks.tasks.daily_login.completed
+    });
+    
     // 学习时间任务（细分）
     const studyTime = tasks.tasks.study_time;
     taskList.push({ id: 'study_10', name: '学习10分钟', expReward: 3, completed: studyTime.progress >= 10 });
@@ -254,13 +262,6 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
     taskList.push({ id: 'answer_100', name: '答对100题', expReward: 3, completed: correctAnswers.progress >= 100 });
     
     // 其他任务
-    taskList.push({
-      id: 'daily_login',
-      name: '每日登录',
-      expReward: 1,
-      completed: tasks.tasks.daily_login.completed
-    });
-    
     taskList.push({
       id: 'consecutive_wins',
       name: '连胜',
@@ -383,7 +384,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
               {/* 连胜提示框 */}
               {showStreakTooltip && (
                 <div 
-                  className="streak-tooltip absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 z-50"
+                  className="streak-tooltip absolute top-full right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 z-50"
                   onMouseEnter={() => cancelHideTooltip('streak')}
                   onMouseLeave={() => hideTooltip('streak')}
                 >
@@ -406,13 +407,46 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                             {day.isTodayStreak || day.hasStreak ? '✓' : day.dayName}
                           </div>
                           {day.expValue > 0 && (
-                            <div className="text-xs text-green-600 dark:text-green-400 font-medium">
+                            <div className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">
                               +{day.expValue}
                             </div>
                           )}
                         </div>
                       ))}
                     </div>
+                    
+                    {/* 今日统计 */}
+                    {(() => {
+                      const dailyStats = gamificationService.getDailyStats();
+                      const accuracy = dailyStats.questionsAnswered > 0 
+                        ? Math.round((dailyStats.correctAnswers / dailyStats.questionsAnswered) * 100)
+                        : 0;
+                      const avgTime = dailyStats.questionsAnswered > 0
+                        ? Math.round(dailyStats.totalTime / dailyStats.questionsAnswered / 1000)
+                        : 0;
+                      
+                      return (
+                        <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
+                          <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            今日统计
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="text-gray-600 dark:text-gray-400">
+                              答题数: <span className="font-medium text-gray-900 dark:text-white">{dailyStats.questionsAnswered}</span>
+                            </div>
+                            <div className="text-gray-600 dark:text-gray-400">
+                              答对数: <span className="font-medium text-gray-900 dark:text-white">{dailyStats.correctAnswers}</span>
+                            </div>
+                            <div className="text-gray-600 dark:text-gray-400">
+                              正确率: <span className="font-medium text-gray-900 dark:text-white">{accuracy}%</span>
+                            </div>
+                            <div className="text-gray-600 dark:text-gray-400">
+                              平均用时: <span className="font-medium text-gray-900 dark:text-white">{avgTime}秒</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
@@ -570,9 +604,9 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
             </div>
 
             {/* 任务列表 */}
-            <div className="space-y-2">
+            <div className="space-y-1">
               {getTaskList().map(task => (
-                <div key={task.id} className="flex items-center justify-between py-2">
+                <div key={task.id} className="flex items-center justify-between py-1">
                   <div className="flex items-center space-x-2">
                     <div className={`w-4 h-4 rounded-full flex items-center justify-center text-xs font-medium ${
                       task.completed 
@@ -590,7 +624,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                   <div className={`text-sm font-bold ${
                     task.completed ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
                   }`}>
-                    +{task.expReward}EXP
+                    +{task.expReward} EXP
                   </div>
                 </div>
               ))}
