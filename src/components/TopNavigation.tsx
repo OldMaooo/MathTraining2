@@ -203,9 +203,9 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
     const todayStr = today.toISOString().split('T')[0];
     
     // 计算连胜经验值
-    const getStreakExp = (dayIndex: number) => {
-      if (dayIndex === 0) return 0; // 今天还没完成
-      return Math.min(2 + (dayIndex - 1), 7); // 第一天+2，之后每天+1，最多+7
+    const getStreakExp = (daysAgo: number) => {
+      if (daysAgo === 0) return 0; // 今天还没完成
+      return Math.min(2 + (daysAgo - 1), 7); // 第一天+2，之后每天+1，最多+7
     };
     
     for (let i = 6; i >= 0; i--) {
@@ -213,12 +213,12 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
       const dayName = ['日', '一', '二', '三', '四', '五', '六'][date.getDay()];
-      const dayIndex = 6 - i; // 0=今天，1=昨天，2=前天...
+      const daysAgo = i; // 0=今天，1=昨天，2=前天...
       
-      // 模拟连胜状态（实际应该从用户数据获取）
-      // dayIndex: 0=今天，1=昨天，2=前天...
-      const hasStreak = dayIndex > 0 && dayIndex <= profile.streak;
-      const isTodayStreak = dayIndex === 0 && profile.streak > 0;
+      // 连胜状态判断
+      // 如果用户有连胜，那么从今天往前数，连续的天数应该有连胜
+      const hasStreak = daysAgo > 0 && daysAgo <= profile.streak;
+      const isTodayStreak = daysAgo === 0 && profile.streak > 0;
       
       week.push({
         date: dateStr,
@@ -226,7 +226,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
         isToday: dateStr === todayStr,
         hasStreak,
         isTodayStreak,
-        expValue: hasStreak ? getStreakExp(dayIndex) : 0
+        expValue: hasStreak ? getStreakExp(daysAgo) : 0
       });
     }
     
