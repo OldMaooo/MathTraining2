@@ -8,6 +8,7 @@ export interface Account {
 export class AccountService {
   private static instance: AccountService;
   private currentAccountId: string | null = null;
+  private recentAccountIds: string[] = [];
 
   private constructor() {}
 
@@ -77,6 +78,9 @@ export class AccountService {
     this.currentAccountId = accountId;
     localStorage.setItem('mp-current-account-id', accountId);
     
+    // 更新最近切换的账号列表
+    this.addToRecentAccounts(accountId);
+    
     // 更新最后活跃时间
     const accounts = this.getAccounts();
     const account = accounts.find(acc => acc.id === accountId);
@@ -84,6 +88,50 @@ export class AccountService {
       account.lastActiveAt = Date.now();
       this.saveAccounts(accounts);
     }
+  }
+
+  // 添加到最近账号列表
+  private addToRecentAccounts(accountId: string): void {
+    this.recentAccountIds = this.getRecentAccountIds();
+    
+    // 移除已存在的账号ID
+    this.recentAccountIds = this.recentAccountIds.filter(id => id !== accountId);
+    
+    // 添加到开头
+    this.recentAccountIds.unshift(accountId);
+    
+    // 限制最多保存5个最近账号
+    this.recentAccountIds = this.recentAccountIds.slice(0, 5);
+    
+    // 保存到localStorage
+    localStorage.setItem('mp-recent-account-ids', JSON.stringify(this.recentAccountIds));
+  }
+
+  // 获取最近账号ID列表
+  private getRecentAccountIds(): string[] {
+    const saved = localStorage.getItem('mp-recent-account-ids');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  }
+
+  // 获取最近切换的账号（排除当前账号）
+  getRecentAccounts(): Account[] {
+    const recentIds = this.getRecentAccountIds();
+    const currentId = this.getCurrentAccountId();
+    const accounts = this.getAccounts();
+    
+    // 过滤掉当前账号，只返回最近切换过的账号
+    return recentIds
+      .filter(id => id !== currentId)
+      .map(id => accounts.find(acc => acc.id === id))
+      .filter((acc): acc is Account => acc !== undefined)
+      .slice(0, 3); // 最多显示3个最近账号
   }
 
   // 删除账号

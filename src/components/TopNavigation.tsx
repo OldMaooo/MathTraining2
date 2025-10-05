@@ -23,8 +23,11 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
   const [userMenuTimeout, setUserMenuTimeout] = useState<NodeJS.Timeout | null>(null);
   const [currentAccount, setCurrentAccount] = useState<Account | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [recentAccounts, setRecentAccounts] = useState<Account[]>([]);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
+  const [hoveredAccountId, setHoveredAccountId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -53,25 +56,31 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
       const accountService = AccountService.getInstance();
       const current = accountService.getCurrentAccount();
       const allAccounts = accountService.getAccounts();
+      const recent = accountService.getRecentAccounts();
       
       if (!current && allAccounts.length > 0) {
         // 如果没有当前账号但有账号列表，设置第一个为当前账号
         accountService.setCurrentAccount(allAccounts[0].id);
         setCurrentAccount(allAccounts[0]);
+        setAccounts(allAccounts);
+        setRecentAccounts(accountService.getRecentAccounts());
       } else if (!current) {
         // 如果没有任何账号，创建默认账号
         const defaultAccount = accountService.getOrCreateDefaultAccount();
         setCurrentAccount(defaultAccount);
         setAccounts([defaultAccount]);
+        setRecentAccounts([]);
       } else {
         setCurrentAccount(current);
         setAccounts(allAccounts);
+        setRecentAccounts(recent);
       }
     } catch (error) {
       console.error('Account initialization error:', error);
       // 设置默认值避免崩溃
       setCurrentAccount({ id: 'default', name: '用户', createdAt: Date.now(), lastActiveAt: Date.now() });
       setAccounts([]);
+      setRecentAccounts([]);
     }
   }, []);
 
@@ -285,7 +294,9 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
       const accountService = AccountService.getInstance();
       const newAccount = accountService.createAccount(newAccountName.trim());
       setAccounts(accountService.getAccounts());
+      setRecentAccounts(accountService.getRecentAccounts());
       setNewAccountName('');
+      setShowCreateAccountModal(false);
       setShowAccountMenu(false);
     }
   };
@@ -294,6 +305,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
     const accountService = AccountService.getInstance();
     accountService.setCurrentAccount(accountId);
     setCurrentAccount(accountService.getCurrentAccount());
+    setRecentAccounts(accountService.getRecentAccounts());
     setShowAccountMenu(false);
   };
 
@@ -308,6 +320,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
       accountService.deleteAccount(accountId);
       setAccounts(accountService.getAccounts());
       setCurrentAccount(accountService.getCurrentAccount());
+      setRecentAccounts(accountService.getRecentAccounts());
     }
   };
 
@@ -484,50 +497,58 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                   onMouseLeave={() => hideTooltip('user')}
                 >
                   <div className="py-1">
-                    {/* 账号切换 */}
+                    {/* 当前账号 */}
                     <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">切换账号</div>
-                      {accounts.map(account => (
-                        <div key={account.id} className="flex items-center justify-between py-1">
-                          <button
-                            className={`flex-1 text-left text-sm px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                              account.id === currentAccount?.id ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-300'
-                            }`}
-                            onClick={() => handleSwitchAccount(account.id)}
-                          >
-                            {account.id === currentAccount?.id && '✓ '}{account.name}
-                          </button>
-                          {accounts.length > 1 && (
-                            <button
-                              className="text-red-500 hover:text-red-700 text-xs px-1"
-                              onClick={() => handleDeleteAccount(account.id)}
-                            >
-                              ×
-                            </button>
-                          )}
+                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">当前账号</div>
+                      <div className="flex items-center justify-between py-1">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {currentAccount?.name || '用户'}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                    
-                    {/* 创建新账号 */}
-                    <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">创建新账号</div>
-                      <div className="flex space-x-2">
-                        <input
-                          type="text"
-                          value={newAccountName}
-                          onChange={(e) => setNewAccountName(e.target.value)}
-                          placeholder="账号名称"
-                          className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          onKeyPress={(e) => e.key === 'Enter' && handleCreateAccount()}
-                        />
-                        <button
-                          onClick={handleCreateAccount}
-                          className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                        >
-                          创建
-                        </button>
                       </div>
+                    </div>
+
+                    {/* 最近切换的账号 */}
+                    {recentAccounts.length > 0 && (
+                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">最近切换</div>
+                        {recentAccounts.map(account => (
+                          <div 
+                            key={account.id} 
+                            className="flex items-center justify-between py-1 group"
+                            onMouseEnter={() => setHoveredAccountId(account.id)}
+                            onMouseLeave={() => setHoveredAccountId(null)}
+                          >
+                            <button
+                              className="flex-1 text-left text-sm px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                              onClick={() => handleSwitchAccount(account.id)}
+                            >
+                              {account.name}
+                            </button>
+                            {hoveredAccountId === account.id && accounts.length > 1 && (
+                              <button
+                                className="text-red-500 hover:text-red-700 text-xs px-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleDeleteAccount(account.id)}
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* 新建账号 */}
+                    <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                      <button
+                        className="flex items-center space-x-2 w-full text-left text-sm px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                        onClick={() => setShowCreateAccountModal(true)}
+                      >
+                        <span className="text-green-500">+</span>
+                        <span>新建账号</span>
+                      </button>
                     </div>
                     
                     {/* 其他功能 */}
@@ -628,6 +649,60 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 新建账号弹窗 */}
+      {showCreateAccountModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-96 max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">新建账号</h3>
+              <button
+                onClick={() => {
+                  setShowCreateAccountModal(false);
+                  setNewAccountName('');
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                账号名称
+              </label>
+              <input
+                type="text"
+                value={newAccountName}
+                onChange={(e) => setNewAccountName(e.target.value)}
+                placeholder="请输入账号名称"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoFocus
+                onKeyPress={(e) => e.key === 'Enter' && handleCreateAccount()}
+              />
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowCreateAccountModal(false);
+                  setNewAccountName('');
+                }}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleCreateAccount}
+                disabled={!newAccountName.trim()}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                创建
+              </button>
             </div>
           </div>
         </div>

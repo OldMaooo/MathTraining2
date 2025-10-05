@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 
 interface StartProps {
   onStart: () => void;
-  onTest: () => void;
-  onHeaderTest?: () => void;
 }
 
-export const Start: React.FC<StartProps> = ({ onStart, onHeaderTest }) => {
+export const Start: React.FC<StartProps> = ({ onStart }) => {
   
   const [config, setConfig] = useState({
     questionType: 'borrow' as 'borrow' | 'carry' | 'mixed' | 'multiply' | 'divide' | 'multiply_divide' | 'all_four' | 'fill_add_subtract' | 'fill_multiply_divide',
@@ -16,7 +14,6 @@ export const Start: React.FC<StartProps> = ({ onStart, onHeaderTest }) => {
   });
   
   const [hasWrongSet, setHasWrongSet] = useState(false);
-  const [isTestMode, setIsTestMode] = useState(false);
   
   // 影子状态管理输入值，防止清空所有数字
   const [shadowQuestionCount, setShadowQuestionCount] = useState(config.questionCount.toString());
@@ -28,7 +25,6 @@ export const Start: React.FC<StartProps> = ({ onStart, onHeaderTest }) => {
     const savedRange = localStorage.getItem('range');
     const savedQuestionCount = localStorage.getItem('questionCount');
     const savedTimeLimit = localStorage.getItem('timeLimit');
-    const savedTestMode = localStorage.getItem('isTestMode');
 
     if (savedQuestionType) {
       setConfig(prev => ({ ...prev, questionType: savedQuestionType as any }));
@@ -48,9 +44,6 @@ export const Start: React.FC<StartProps> = ({ onStart, onHeaderTest }) => {
       setConfig(prev => ({ ...prev, timeLimit: timeValue }));
       setShadowTimeLimit(timeValue.toString());
     }
-    if (savedTestMode) {
-      setIsTestMode(savedTestMode === 'true');
-    }
 
     const wrongQuestions = JSON.parse(localStorage.getItem('mp-wrong-questions') || '[]');
     setHasWrongSet(wrongQuestions.length > 0);
@@ -61,8 +54,7 @@ export const Start: React.FC<StartProps> = ({ onStart, onHeaderTest }) => {
     localStorage.setItem('range', config.range.toString());
     localStorage.setItem('questionCount', config.questionCount.toString());
     localStorage.setItem('timeLimit', config.timeLimit.toString());
-    localStorage.setItem('isTestMode', isTestMode.toString());
-  }, [config, isTestMode]);
+  }, [config]);
 
   const handleStartClick = () => {
     localStorage.setItem('mp-start-with-wrong-set', '0');
@@ -118,27 +110,6 @@ export const Start: React.FC<StartProps> = ({ onStart, onHeaderTest }) => {
             width: '100%'
           }}
         >
-          {/* 测试模式开关 */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-700">
-              <div className="flex items-center space-x-3">
-                <div className="text-2xl">🧪</div>
-                <div>
-                  <div className="text-lg font-semibold text-gray-800 dark:text-gray-200">测试模式</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">开启后成绩和错题不会记录到正式池中</div>
-                </div>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isTestMode}
-                  onChange={(e) => setIsTestMode(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-200 after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 dark:peer-checked:bg-blue-500"></div>
-              </label>
-            </div>
-          </div>
 
           {/* 题目数量 */}
           <div className="mb-6">
@@ -289,15 +260,6 @@ export const Start: React.FC<StartProps> = ({ onStart, onHeaderTest }) => {
             🚀 开始练习
           </button>
 
-          {/* 头部测试按钮 */}
-          {onHeaderTest && (
-            <button
-              onClick={onHeaderTest}
-              className="w-full bg-gradient-to-br from-green-500 to-teal-500 text-white text-lg font-bold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl mb-4"
-            >
-              🧪 测试头部组件
-            </button>
-          )}
 
           {/* 错题练习按钮 */}
           {hasWrongSet && (
