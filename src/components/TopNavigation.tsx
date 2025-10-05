@@ -498,51 +498,45 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                   onMouseLeave={() => hideTooltip('user')}
                 >
                   <div className="py-1">
-                    {/* 当前账号 */}
+                    {/* 切换账号 */}
                     <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">当前账号</div>
+                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">切换账号</div>
+                      
+                      {/* 当前账号 */}
                       <div className="flex items-center justify-between py-1">
                         <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                           <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {currentAccount?.name || '用户'}
+                            ✓ {currentAccount?.name || '用户'}
                           </span>
                         </div>
                       </div>
-                    </div>
 
-                    {/* 最近切换的账号 */}
-                    {recentAccounts.length > 0 && (
-                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">最近切换</div>
-                        {recentAccounts.map(account => (
-                          <div 
-                            key={account.id} 
-                            className="flex items-center justify-between py-1 group"
-                            onMouseEnter={() => setHoveredAccountId(account.id)}
-                            onMouseLeave={() => setHoveredAccountId(null)}
+                      {/* 最近切换的账号 */}
+                      {recentAccounts.map(account => (
+                        <div 
+                          key={account.id} 
+                          className="flex items-center justify-between py-1 group"
+                          onMouseEnter={() => setHoveredAccountId(account.id)}
+                          onMouseLeave={() => setHoveredAccountId(null)}
+                        >
+                          <button
+                            className="flex-1 text-left text-sm px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                            onClick={() => handleSwitchAccount(account.id)}
                           >
+                            {account.name}
+                          </button>
+                          {hoveredAccountId === account.id && accounts.length > 1 && (
                             <button
-                              className="flex-1 text-left text-sm px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                              onClick={() => handleSwitchAccount(account.id)}
+                              className="text-red-500 hover:text-red-700 text-xs px-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleDeleteAccount(account.id)}
                             >
-                              {account.name}
+                              ×
                             </button>
-                            {hoveredAccountId === account.id && accounts.length > 1 && (
-                              <button
-                                className="text-red-500 hover:text-red-700 text-xs px-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => handleDeleteAccount(account.id)}
-                              >
-                                ×
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          )}
+                        </div>
+                      ))}
 
-                    {/* 添加账号 */}
-                    <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                      {/* 添加账号 */}
                       <button
                         className="flex items-center space-x-2 w-full text-left text-sm px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
                         onClick={() => setShowAddAccountModal(true)}
@@ -660,7 +654,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-96 max-w-md mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">添加账号</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">添加已有账号</h3>
               <button
                 onClick={() => {
                   setShowAddAccountModal(false);
@@ -673,9 +667,6 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
             </div>
             
             <div className="mb-4">
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                输入用户名登录已有账号，如果账号不存在将自动创建新账号
-              </div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 用户名
               </label>
@@ -692,20 +683,18 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
             
             <div className="flex space-x-3">
               <button
-                onClick={() => {
-                  setShowAddAccountModal(false);
-                  setAccountName('');
-                }}
-                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                取消
-              </button>
-              <button
                 onClick={handleAddAccount}
                 disabled={!accountName.trim()}
                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
-                登录/创建
+                确认
+              </button>
+              <button
+                onClick={handleAddAccount}
+                disabled={!accountName.trim()}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                我要注册
               </button>
             </div>
           </div>

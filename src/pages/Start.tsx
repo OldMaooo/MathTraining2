@@ -122,7 +122,7 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
                   value={shadowQuestionCount}
                   onChange={(e) => setShadowQuestionCount(e.target.value)}
                   onBlur={() => handleBlur('questionCount', shadowQuestionCount, 10)}
-                  className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-center bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-20 h-9 px-3 border border-gray-300 dark:border-gray-600 rounded-lg text-center bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <span className="text-gray-700 dark:text-gray-300">题</span>
               </div>
@@ -155,25 +155,35 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
                   value={shadowTimeLimit}
                   onChange={(e) => setShadowTimeLimit(e.target.value)}
                   onBlur={() => handleBlur('timeLimit', shadowTimeLimit, 5)}
-                  className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-center bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-20 h-9 px-3 border border-gray-300 dark:border-gray-600 rounded-lg text-center bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <span className="text-gray-700 dark:text-gray-300">秒</span>
               </div>
             </div>
-            <div className="grid grid-cols-5 gap-2 mt-3">
-              {[2, 3, 5, 10, 0.87].map((time) => (
+            <div className="flex gap-2 mt-3">
+              {[3, 5, 10].map((time) => (
                 <button
                   key={time}
                   onClick={() => handleConfigChange('timeLimit', time)}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex-1 px-3 py-1 rounded-lg text-sm font-medium transition-all ${
                     config.timeLimit === time
                       ? 'bg-blue-500 text-white shadow-md'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
-                  {time === 0.87 ? '0.87秒 (纪录)' : `${time}秒`}
+                  {time}秒
                 </button>
               ))}
+              <button
+                onClick={() => handleConfigChange('timeLimit', 0.87)}
+                className={`w-24 px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                  config.timeLimit === 0.87
+                    ? 'bg-blue-500 text-white shadow-md'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                0.87秒 (纪录)
+              </button>
             </div>
           </div>
 
@@ -227,7 +237,7 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
                   value={shadowRange}
                   onChange={(e) => setShadowRange(e.target.value)}
                   onBlur={() => handleBlur('range', shadowRange, 20)}
-                  className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-center bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-20 h-9 px-3 border border-gray-300 dark:border-gray-600 rounded-lg text-center bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <span className="text-gray-700 dark:text-gray-300">以内</span>
               </div>
