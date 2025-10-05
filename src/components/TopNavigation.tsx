@@ -200,18 +200,32 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
   const generateWeekCalendar = () => {
     const today = new Date();
     const week = [];
+    const todayStr = today.toISOString().split('T')[0];
+    
+    // 计算连胜经验值
+    const getStreakExp = (dayIndex: number) => {
+      if (dayIndex === 0) return 0; // 今天还没完成
+      return Math.min(2 + (dayIndex - 1), 7); // 第一天+2，之后每天+1，最多+7
+    };
     
     for (let i = 6; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
       const dayName = ['日', '一', '二', '三', '四', '五', '六'][date.getDay()];
+      const dayIndex = 6 - i; // 0=今天，1=昨天，2=前天...
+      
+      // 模拟连胜状态（实际应该从用户数据获取）
+      const hasStreak = dayIndex > 0 && dayIndex <= profile.streak;
+      const isTodayStreak = dayIndex === 0 && profile.streak > 0;
       
       week.push({
         date: dateStr,
         dayName,
-        isToday: dateStr === today.toISOString().split('T')[0],
-        hasStreak: false // 简化版本，暂时不显示连胜历史
+        isToday: dateStr === todayStr,
+        hasStreak,
+        isTodayStreak,
+        expValue: hasStreak ? getStreakExp(dayIndex) : 0
       });
     }
     
@@ -223,14 +237,43 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
   // 获取任务列表
   const getTaskList = () => {
     const tasks = gamificationService.getDailyTasks();
-    return Object.entries(tasks.tasks).map(([key, task]) => ({
-      id: key,
-      name: task.name,
-      description: `目标: ${task.target}`,
+    const taskList = [];
+    
+    // 学习时间任务（细分）
+    const studyTime = tasks.tasks.study_time;
+    if (studyTime.progress >= 10) taskList.push({ id: 'study_10', name: '学习10分钟', expReward: 3, completed: true });
+    if (studyTime.progress >= 20) taskList.push({ id: 'study_20', name: '学习20分钟', expReward: 3, completed: true });
+    if (studyTime.progress >= 30) taskList.push({ id: 'study_30', name: '学习30分钟', expReward: 3, completed: true });
+    
+    // 答题任务（细分）
+    const correctAnswers = tasks.tasks.correct_answers;
+    if (correctAnswers.progress >= 30) taskList.push({ id: 'answer_30', name: '答对30题', expReward: 3, completed: true });
+    if (correctAnswers.progress >= 50) taskList.push({ id: 'answer_50', name: '答对50题', expReward: 3, completed: true });
+    if (correctAnswers.progress >= 100) taskList.push({ id: 'answer_100', name: '答对100题', expReward: 3, completed: true });
+    
+    // 其他任务
+    taskList.push({
+      id: 'daily_login',
+      name: '每日登录',
       expReward: 1,
-      completed: task.completed,
-      progress: (task.progress / task.target) * 100
-    }));
+      completed: tasks.tasks.daily_login.completed
+    });
+    
+    taskList.push({
+      id: 'consecutive_wins',
+      name: '连胜',
+      expReward: 2,
+      completed: tasks.tasks.consecutive_wins.completed
+    });
+    
+    taskList.push({
+      id: 'random_bonus',
+      name: '随机奖励',
+      expReward: 1,
+      completed: tasks.tasks.random_bonus.completed
+    });
+    
+    return taskList;
   };
 
   // 账号管理方法
@@ -350,17 +393,24 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                       {weekCalendar.map((day, index) => (
                         <div key={day.date} className="flex flex-col items-center">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
-                            day.hasStreak 
-                              ? 'bg-green-500 text-white' 
-                              : day.isToday 
-                                ? 'bg-gray-200 text-gray-600' 
-                                : 'bg-gray-100 text-gray-400'
+                            day.isTodayStreak
+                              ? 'bg-green-500 text-white' // 当日连胜：绿色+勾
+                              : day.hasStreak
+                                ? 'bg-green-500 text-white opacity-40' // 历史连胜：绿色+勾+透明度
+                                : day.isToday
+                                  ? 'bg-gray-200 text-gray-600' // 今日未完成：灰色
+                                  : 'bg-gray-100 text-gray-400' // 其他：浅灰色
                           }`}>
-                            {day.hasStreak ? '✓' : day.dayName}
+                            {day.isTodayStreak || day.hasStreak ? '✓' : day.dayName}
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             {day.dayName}
                           </div>
+                          {day.expValue > 0 && (
+                            <div className="text-xs text-green-600 dark:text-green-400 font-medium">
+                              +{day.expValue}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -510,58 +560,40 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
             <div className="mb-4">
               <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300 mb-1">
                 <span>任务进度</span>
-                <span>{getTaskList().filter(t => t.completed).length}/5</span>
+                <span>{getTaskList().filter(t => t.completed).length}/{getTaskList().length}</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
                 <div 
-                  className="bg-gradient-to-r from-purple-400 to-purple-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(getTaskList().filter(t => t.completed).length / 5) * 100}%` }}
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300"
+                  style={{ width: `${(getTaskList().filter(t => t.completed).length / getTaskList().length) * 100}%` }}
                 />
               </div>
             </div>
 
             {/* 任务列表 */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               {getTaskList().map(task => (
-                <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-4 h-4 rounded-full border-2 ${
-                        task.completed 
-                          ? 'bg-green-500 border-green-500' 
-                          : 'border-gray-300 dark:border-gray-600'
-                      }`}>
-                        {task.completed && (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <div className="w-2 h-2 bg-white rounded-full" />
-                          </div>
-                        )}
-                      </div>
-                      <span className={`text-sm font-medium ${
-                        task.completed ? 'text-green-700 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'
-                      }`}>
-                        {task.name}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {task.description}
-                    </div>
-                    {task.progress !== undefined && !task.completed && (
-                      <div className="mt-2">
-                        <div className="w-full bg-gray-200 rounded-full h-1">
-                          <div 
-                            className="bg-blue-500 h-1 rounded-full transition-all duration-300"
-                            style={{ width: `${task.progress}%` }}
-                          />
+                <div key={task.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-4 h-4 rounded-full border-2 ${
+                      task.completed 
+                        ? 'bg-green-500 border-green-500' 
+                        : 'border-gray-300 dark:border-gray-600'
+                    }`}>
+                      {task.completed && (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-white rounded-full" />
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {task.progress}%
-                        </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                    <span className={`text-sm font-medium ${
+                      task.completed ? 'text-green-700 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'
+                    }`}>
+                      {task.name}
+                    </span>
                   </div>
                   <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                    +{task.expReward}
+                    +{task.expReward}EXP
                   </div>
                 </div>
               ))}
