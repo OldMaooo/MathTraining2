@@ -28,7 +28,6 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [accountName, setAccountName] = useState('');
-  const [accountType, setAccountType] = useState<'admin' | 'user'>('user');
   const [hoveredAccountId, setHoveredAccountId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -310,13 +309,12 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
   const handleRegisterAccount = () => {
     if (accountName.trim()) {
       const accountService = AccountService.getInstance();
-      const account = accountService.createAccount(accountName.trim(), accountType);
+      const account = accountService.createAccount(accountName.trim());
       accountService.setCurrentAccount(account.id);
       setAccounts(accountService.getAccounts());
       setCurrentAccount(account);
       setRecentAccounts(accountService.getRecentAccounts());
       setAccountName('');
-      setAccountType('user');
       setShowRegisterModal(false);
       setShowAccountMenu(false);
       
@@ -764,34 +762,6 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                 autoFocus
                 onKeyPress={(e) => e.key === 'Enter' && handleRegisterAccount()}
               />
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                账号类型
-              </label>
-              <div className="flex space-x-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="user"
-                    checked={accountType === 'user'}
-                    onChange={(e) => setAccountType(e.target.value as 'admin' | 'user')}
-                    className="mr-2"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">普通用户</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="admin"
-                    checked={accountType === 'admin'}
-                    onChange={(e) => setAccountType(e.target.value as 'admin' | 'user')}
-                    className="mr-2"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">管理员</span>
-                </label>
-              </div>
             </div>
             
             <div className="space-y-3">

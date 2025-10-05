@@ -39,12 +39,16 @@ export class AccountService {
   }
 
   // 创建新账号
-  createAccount(name: string, type: 'admin' | 'user' = 'user'): Account {
+  createAccount(name: string, type?: 'admin' | 'user'): Account {
     const accounts = this.getAccounts();
+    
+    // 自动判断账号类型：mao1986为admin，其他为user
+    const accountType = type || (name === 'mao1986' ? 'admin' : 'user');
+    
     const newAccount: Account = {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       name,
-      type,
+      type: accountType,
       createdAt: Date.now(),
       lastActiveAt: Date.now()
     };
@@ -187,14 +191,14 @@ export class AccountService {
   }
 
   // 登录已有账号（如果不存在则创建）
-  loginOrCreateAccount(name: string, type: 'admin' | 'user' = 'user'): Account {
+  loginOrCreateAccount(name: string, type?: 'admin' | 'user'): Account {
     const existingAccount = this.findAccountByName(name);
     if (existingAccount) {
       // 账号已存在，切换到该账号
       this.setCurrentAccount(existingAccount.id);
       return existingAccount;
     } else {
-      // 账号不存在，创建新账号
+      // 账号不存在，创建新账号（自动判断类型）
       const newAccount = this.createAccount(name, type);
       this.setCurrentAccount(newAccount.id);
       return newAccount;
