@@ -216,6 +216,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
       const dayIndex = 6 - i; // 0=今天，1=昨天，2=前天...
       
       // 模拟连胜状态（实际应该从用户数据获取）
+      // dayIndex: 0=今天，1=昨天，2=前天...
       const hasStreak = dayIndex > 0 && dayIndex <= profile.streak;
       const isTodayStreak = dayIndex === 0 && profile.streak > 0;
       
@@ -241,15 +242,15 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
     
     // 学习时间任务（细分）
     const studyTime = tasks.tasks.study_time;
-    if (studyTime.progress >= 10) taskList.push({ id: 'study_10', name: '学习10分钟', expReward: 3, completed: true });
-    if (studyTime.progress >= 20) taskList.push({ id: 'study_20', name: '学习20分钟', expReward: 3, completed: true });
-    if (studyTime.progress >= 30) taskList.push({ id: 'study_30', name: '学习30分钟', expReward: 3, completed: true });
+    taskList.push({ id: 'study_10', name: '学习10分钟', expReward: 3, completed: studyTime.progress >= 10 });
+    taskList.push({ id: 'study_20', name: '学习20分钟', expReward: 3, completed: studyTime.progress >= 20 });
+    taskList.push({ id: 'study_30', name: '学习30分钟', expReward: 3, completed: studyTime.progress >= 30 });
     
     // 答题任务（细分）
     const correctAnswers = tasks.tasks.correct_answers;
-    if (correctAnswers.progress >= 30) taskList.push({ id: 'answer_30', name: '答对30题', expReward: 3, completed: true });
-    if (correctAnswers.progress >= 50) taskList.push({ id: 'answer_50', name: '答对50题', expReward: 3, completed: true });
-    if (correctAnswers.progress >= 100) taskList.push({ id: 'answer_100', name: '答对100题', expReward: 3, completed: true });
+    taskList.push({ id: 'answer_30', name: '答对30题', expReward: 3, completed: correctAnswers.progress >= 30 });
+    taskList.push({ id: 'answer_50', name: '答对50题', expReward: 3, completed: correctAnswers.progress >= 50 });
+    taskList.push({ id: 'answer_100', name: '答对100题', expReward: 3, completed: correctAnswers.progress >= 100 });
     
     // 其他任务
     taskList.push({
@@ -404,7 +405,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                             {day.isTodayStreak || day.hasStreak ? '✓' : day.dayName}
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {day.dayName}
+                            {!(day.isTodayStreak || day.hasStreak) ? day.dayName : ''}
                           </div>
                           {day.expValue > 0 && (
                             <div className="text-xs text-green-600 dark:text-green-400 font-medium">
@@ -573,7 +574,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
             {/* 任务列表 */}
             <div className="space-y-2">
               {getTaskList().map(task => (
-                <div key={task.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div key={task.id} className="flex items-center justify-between py-2">
                   <div className="flex items-center space-x-2">
                     <div className={`w-4 h-4 rounded-full border-2 ${
                       task.completed 
