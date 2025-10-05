@@ -176,7 +176,7 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
               ))}
               <button
                 onClick={() => handleConfigChange('timeLimit', 0.87)}
-                className={`w-24 px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                className={`w-32 px-3 py-1 rounded-lg text-sm font-medium transition-all ${
                   config.timeLimit === 0.87
                     ? 'bg-blue-500 text-white shadow-md'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'

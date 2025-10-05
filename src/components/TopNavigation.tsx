@@ -26,6 +26,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
   const [recentAccounts, setRecentAccounts] = useState<Account[]>([]);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [accountName, setAccountName] = useState('');
   const [hoveredAccountId, setHoveredAccountId] = useState<string | null>(null);
 
@@ -298,6 +299,20 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
       setRecentAccounts(accountService.getRecentAccounts());
       setAccountName('');
       setShowAddAccountModal(false);
+      setShowAccountMenu(false);
+    }
+  };
+
+  const handleRegisterAccount = () => {
+    if (accountName.trim()) {
+      const accountService = AccountService.getInstance();
+      const account = accountService.createAccount(accountName.trim());
+      accountService.setCurrentAccount(account.id);
+      setAccounts(accountService.getAccounts());
+      setCurrentAccount(account);
+      setRecentAccounts(accountService.getRecentAccounts());
+      setAccountName('');
+      setShowRegisterModal(false);
       setShowAccountMenu(false);
     }
   };
@@ -681,20 +696,76 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
               />
             </div>
             
-            <div className="flex space-x-3">
+            <div className="space-y-3">
               <button
                 onClick={handleAddAccount}
                 disabled={!accountName.trim()}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 确认
               </button>
               <button
-                onClick={handleAddAccount}
-                disabled={!accountName.trim()}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                onClick={() => {
+                  setShowAddAccountModal(false);
+                  setShowRegisterModal(true);
+                }}
+                className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
               >
-                我要注册
+                没有账号，立即注册
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 注册账号弹窗 */}
+      {showRegisterModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-96 max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">注册新账号</h3>
+              <button
+                onClick={() => {
+                  setShowRegisterModal(false);
+                  setAccountName('');
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                用户名
+              </label>
+              <input
+                type="text"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                placeholder="请输入用户名"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoFocus
+                onKeyPress={(e) => e.key === 'Enter' && handleRegisterAccount()}
+              />
+            </div>
+            
+            <div className="space-y-3">
+              <button
+                onClick={handleRegisterAccount}
+                disabled={!accountName.trim()}
+                className="w-full px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                注册
+              </button>
+              <button
+                onClick={() => {
+                  setShowRegisterModal(false);
+                  setShowAddAccountModal(true);
+                }}
+                className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+              >
+                已有账号，立即登录
               </button>
             </div>
           </div>
