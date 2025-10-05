@@ -205,7 +205,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
     // 计算连胜经验值
     const getStreakExp = (daysAgo: number) => {
       if (daysAgo === 0) return 0; // 今天还没完成
-      return Math.min(2 + (daysAgo - 1), 7); // 第一天+2，之后每天+1，最多+7
+      // 从最远的天数开始：第一天+2，第二天+3，第三天+4...
+      return Math.min(2 + (profile.streak - daysAgo), 7);
     };
     
     for (let i = 6; i >= 0; i--) {
@@ -400,7 +401,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                                 ? 'bg-green-500 text-white opacity-40' // 历史连胜：绿色+勾+透明度
                                 : day.isToday
                                   ? 'border-2 border-gray-300 bg-transparent text-gray-600' // 今日未完成：空心圈+灰字
-                                  : 'border-2 border-gray-200 bg-transparent text-gray-400' // 其他：空心圈+浅灰字
+                                  : 'border-2 border-gray-200 bg-transparent text-gray-400 opacity-50' // 其他：空心圈+浅灰字+低透明度
                           }`}>
                             {day.isTodayStreak || day.hasStreak ? '✓' : day.dayName}
                           </div>
@@ -586,7 +587,9 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                       {task.name}
                     </span>
                   </div>
-                  <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                  <div className={`text-sm font-bold ${
+                    task.completed ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
+                  }`}>
                     +{task.expReward}EXP
                   </div>
                 </div>
