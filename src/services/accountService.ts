@@ -177,4 +177,25 @@ export class AccountService {
     this.setCurrentAccount(accounts[0].id);
     return accounts[0];
   }
+
+  // 根据用户名查找账号
+  findAccountByName(name: string): Account | null {
+    const accounts = this.getAccounts();
+    return accounts.find(account => account.name === name) || null;
+  }
+
+  // 登录已有账号（如果不存在则创建）
+  loginOrCreateAccount(name: string): Account {
+    const existingAccount = this.findAccountByName(name);
+    if (existingAccount) {
+      // 账号已存在，切换到该账号
+      this.setCurrentAccount(existingAccount.id);
+      return existingAccount;
+    } else {
+      // 账号不存在，创建新账号
+      const newAccount = this.createAccount(name);
+      this.setCurrentAccount(newAccount.id);
+      return newAccount;
+    }
+  }
 }
