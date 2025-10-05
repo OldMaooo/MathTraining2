@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { GamificationService } from '../services/gamificationService';
+import { AccountService } from '../services/accountService';
 import { ToastManager } from '../components/Toast';
 import { colors } from '../styles/colors';
 
@@ -189,23 +190,38 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     data: any;
   }>>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [autoAnswerSettings, setAutoAnswerSettings] = useState({
+    enabled: false,
+    accuracy: 80, // 正确率百分比
+    autoCount: 5, // 自动做题数量
+  });
+  const [autoAnsweredCount, setAutoAnsweredCount] = useState(0);
   const [debugStatus, setDebugStatus] = useState('空闲');
   const [isSubmittingHistory, setIsSubmittingHistory] = useState<Array<{timestamp: string, status: string}>>([]);
 
-  // 管理员模式激活快捷键
+  // 检查当前账号是否为admin
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Ctrl + Shift + A 激活管理员模式
-      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
-        e.preventDefault();
-        setIsAdmin(prev => !prev);
-        addDebugInfo('管理员模式切换', { isAdmin: !isAdmin });
+    const checkAdminStatus = () => {
+      try {
+        const accountService = AccountService.getInstance();
+        const currentAccount = accountService.getCurrentAccount();
+        setIsAdmin(currentAccount?.type === 'admin');
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isAdmin]);
+    checkAdminStatus();
+    
+    // 监听账号切换事件
+    const handleAccountChange = () => {
+      checkAdminStatus();
+    };
+    
+    window.addEventListener('mp-account-changed', handleAccountChange);
+    return () => window.removeEventListener('mp-account-changed', handleAccountChange);
+  }, []);
 
   // 游戏化与提示
   const gamification = GamificationService.getInstance();
@@ -698,7 +714,35 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             setPerQuestionTimes([]);
             setTotalPauseTime(0);
             setPauseStartTime(null);
+            setAutoAnsweredCount(0);
   }, []);
+
+  // 自动答题逻辑
+  useEffect(() => {
+    if (!autoAnswerSettings.enabled || !isAdmin || questions.length === 0) return;
+    if (autoAnsweredCount >= autoAnswerSettings.autoCount) return;
+    if (currentQuestion >= questions.length) return;
+    if (isSubmitting) return;
+
+    const currentQ = questions[currentQuestion];
+    if (!currentQ) return;
+
+    // 延迟自动答题，让用户看到题目
+    const timer = setTimeout(() => {
+      const shouldAnswerCorrectly = Math.random() * 100 < autoAnswerSettings.accuracy;
+      const answer = shouldAnswerCorrectly ? currentQ.correctAnswer : currentQ.correctAnswer + (Math.random() > 0.5 ? 1 : -1);
+      
+      setUserAnswer(answer.toString());
+      setAutoAnsweredCount(prev => prev + 1);
+      
+      // 自动提交答案
+      setTimeout(() => {
+        handleSubmit();
+      }, 500);
+    }, 1000 + Math.random() * 2000); // 1-3秒随机延迟
+
+    return () => clearTimeout(timer);
+  }, [currentQuestion, autoAnswerSettings, isAdmin, questions, autoAnsweredCount, isSubmitting]);
   
   // 计时器
   useEffect(() => {
@@ -1535,17 +1579,66 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       
         {/* 管理员调试面板 */}
         {isAdmin && (
-          <div className="fixed top-4 right-4 bg-black/80 text-white p-3 rounded-lg text-xs max-w-xs z-50">
+          <div className="fixed top-4 right-4 bg-black/80 text-white p-3 rounded-lg text-xs max-w-sm z-50">
             <div className="font-bold mb-2">🔧 调试面板</div>
             <div className="space-y-1">
               <div>状态: {debugStatus}</div>
               <div>题目: {currentQuestion + 1}/{questions.length}</div>
               <div>答案: {userAnswer || '未输入'}</div>
               <div>提交中: {isSubmitting ? '是' : '否'}</div>
-              <div className="text-xs text-gray-300 mt-2">
-                提交历史: {isSubmittingHistory.map(h => `${h.timestamp}:${h.status}`).join(', ')}
-              </div>
+              <div>自动答题: {autoAnswerSettings.enabled ? '开启' : '关闭'}</div>
+              {autoAnswerSettings.enabled && (
+                <div>已自动答题: {autoAnsweredCount}/{autoAnswerSettings.autoCount}</div>
+              )}
             </div>
+            
+            {/* 自动答题控制 */}
+            <div className="mt-3 pt-2 border-t border-gray-600">
+              <div className="mb-2">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={autoAnswerSettings.enabled}
+                    onChange={(e) => setAutoAnswerSettings(prev => ({ ...prev, enabled: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <span>启用自动答题</span>
+                </label>
+              </div>
+              
+              {autoAnswerSettings.enabled && (
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-xs text-gray-300 mb-1">
+                      正确率: {autoAnswerSettings.accuracy}%
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={autoAnswerSettings.accuracy}
+                      onChange={(e) => setAutoAnswerSettings(prev => ({ ...prev, accuracy: parseInt(e.target.value) }))}
+                      className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs text-gray-300 mb-1">
+                      自动答题数: {autoAnswerSettings.autoCount}
+                    </label>
+                    <input
+                      type="range"
+                      min="1"
+                      max={Math.min(10, questions.length)}
+                      value={autoAnswerSettings.autoCount}
+                      onChange={(e) => setAutoAnswerSettings(prev => ({ ...prev, autoCount: parseInt(e.target.value) }))}
+                      className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            
             <div className="mt-2 pt-2 border-t border-gray-600">
               <div className="flex space-x-2 mb-2">
                 <button 
@@ -1561,12 +1654,6 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                   测试答错音效
                 </button>
               </div>
-              <button 
-                onClick={() => setIsAdmin(false)}
-                className="text-xs bg-gray-600 px-2 py-1 rounded w-full"
-              >
-                关闭调试
-              </button>
             </div>
           </div>
         )}

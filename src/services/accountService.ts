@@ -1,6 +1,7 @@
 export interface Account {
   id: string;
   name: string;
+  type: 'admin' | 'user';
   createdAt: number;
   lastActiveAt: number;
 }
@@ -38,11 +39,12 @@ export class AccountService {
   }
 
   // 创建新账号
-  createAccount(name: string): Account {
+  createAccount(name: string, type: 'admin' | 'user' = 'user'): Account {
     const accounts = this.getAccounts();
     const newAccount: Account = {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       name,
+      type,
       createdAt: Date.now(),
       lastActiveAt: Date.now()
     };
@@ -165,7 +167,7 @@ export class AccountService {
   getOrCreateDefaultAccount(): Account {
     const accounts = this.getAccounts();
     if (accounts.length === 0) {
-      return this.createAccount('默认用户');
+      return this.createAccount('默认用户', 'user');
     }
     
     const currentId = this.getCurrentAccountId();
@@ -185,7 +187,7 @@ export class AccountService {
   }
 
   // 登录已有账号（如果不存在则创建）
-  loginOrCreateAccount(name: string): Account {
+  loginOrCreateAccount(name: string, type: 'admin' | 'user' = 'user'): Account {
     const existingAccount = this.findAccountByName(name);
     if (existingAccount) {
       // 账号已存在，切换到该账号
@@ -193,7 +195,7 @@ export class AccountService {
       return existingAccount;
     } else {
       // 账号不存在，创建新账号
-      const newAccount = this.createAccount(name);
+      const newAccount = this.createAccount(name, type);
       this.setCurrentAccount(newAccount.id);
       return newAccount;
     }
