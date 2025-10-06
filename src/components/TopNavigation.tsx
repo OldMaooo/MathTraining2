@@ -383,7 +383,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
               {/* 经验值提示框 */}
               {showExpTooltip && (
                 <div 
-                  className="exp-tooltip absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 z-50"
+                  className="exp-tooltip absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 z-50"
                   onMouseEnter={() => cancelHideTooltip('exp')}
                   onMouseLeave={() => hideTooltip('exp')}
                 >
@@ -426,11 +426,11 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
               {/* 连胜提示框 */}
               {showStreakTooltip && (
                 <div 
-                  className="streak-tooltip absolute top-full right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 z-50"
+                  className="streak-tooltip absolute top-full left-1/2 -translate-x-1/2 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 z-50"
                   onMouseEnter={() => cancelHideTooltip('streak')}
                   onMouseLeave={() => hideTooltip('streak')}
                 >
-                  <div className="text-center">
+                    <div className="text-left">
                     <div className="text-lg font-bold text-gray-900 dark:text-white">
                       {profile.streak}日连胜
                     </div>
@@ -457,7 +457,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                       ))}
                     </div>
                     
-                    {/* 今日统计 */}
+                    {/* 今日统计（左对齐，新增总时长）*/}
                     {(() => {
                       const dailyStats = gamificationService.getDailyStats();
                       const accuracy = dailyStats.questionsAnswered > 0 
@@ -466,25 +466,19 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                       const avgTime = dailyStats.questionsAnswered > 0
                         ? Math.round(dailyStats.totalTime / dailyStats.questionsAnswered / 1000)
                         : 0;
+                      const totalTimeSec = Math.round((dailyStats.totalTime || 0) / 1000);
                       
                       return (
                         <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
                           <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                             今日统计
                           </div>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="text-gray-600 dark:text-gray-400">
-                              答题数: <span className="font-medium text-gray-900 dark:text-white">{dailyStats.questionsAnswered}</span>
-                            </div>
-                            <div className="text-gray-600 dark:text-gray-400">
-                              答对数: <span className="font-medium text-gray-900 dark:text-white">{dailyStats.correctAnswers}</span>
-                            </div>
-                            <div className="text-gray-600 dark:text-gray-400">
-                              正确率: <span className="font-medium text-gray-900 dark:text-white">{accuracy}%</span>
-                            </div>
-                            <div className="text-gray-600 dark:text-gray-400">
-                              平均用时: <span className="font-medium text-gray-900 dark:text-white">{avgTime}秒</span>
-                            </div>
+                          <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
+                            <div>答题数: <span className="font-medium text-gray-900 dark:text-white">{dailyStats.questionsAnswered}</span></div>
+                            <div>答对数: <span className="font-medium text-gray-900 dark:text-white">{dailyStats.correctAnswers}</span></div>
+                            <div>正确率: <span className="font-medium text-gray-900 dark:text-white">{accuracy}%</span></div>
+                            <div>平均用时: <span className="font-medium text-gray-900 dark:text-white">{avgTime}秒</span></div>
+                            <div>答题总时长: <span className="font-medium text-gray-900 dark:text-white">{totalTimeSec}秒</span></div>
                           </div>
                         </div>
                       );
@@ -521,7 +515,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
               {/* 用户菜单 */}
               {showUserMenu && (
                 <div 
-                  className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+                  className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50"
                   onMouseEnter={() => cancelHideTooltip('user')}
                   onMouseLeave={() => hideTooltip('user')}
                 >
@@ -534,39 +528,34 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                       <div className="flex items-center justify-between py-1">
                         <div className="flex items-center space-x-2">
                           <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            ✓ {currentAccount?.name || '用户'}
+                            ✓ {currentAccount?.name}{currentAccount?.type === 'admin' ? '(admin)' : ''}
                           </span>
                           {currentAccount?.type === 'admin' && (
-                            <span className="text-xs bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 px-2 py-1 rounded">
-                              ADMIN
-                            </span>
+                            <></>
                           )}
                         </div>
                       </div>
 
                       {/* 最近切换的账号 */}
                       {recentAccounts.map(account => (
-                        <div 
-                          key={account.id} 
-                          className="flex items-center justify-between py-1 group"
+                        <button
+                          type="button"
+                          key={account.id}
+                          className="w-full flex items-center justify-between py-1 px-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 group"
                           onMouseEnter={() => setHoveredAccountId(account.id)}
                           onMouseLeave={() => setHoveredAccountId(null)}
+                          onClick={() => handleSwitchAccount(account.id)}
                         >
-                          <button
-                            className="flex-1 text-left text-sm px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                            onClick={() => handleSwitchAccount(account.id)}
-                          >
-                            {account.name}
-                          </button>
+                          <span>{account.name}{account.type === 'admin' ? '(admin)' : ''}</span>
                           {hoveredAccountId === account.id && accounts.length > 1 && (
-                            <button
-                              className="text-red-500 hover:text-red-700 text-xs px-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => handleDeleteAccount(account.id)}
+                            <span
+                              className="text-gray-400 group-hover:text-gray-500 text-xs px-1"
+                              onClick={(e) => { e.stopPropagation(); handleDeleteAccount(account.id); }}
                             >
                               ×
-                            </button>
+                            </span>
                           )}
-                        </div>
+                        </button>
                       ))}
 
                       {/* 添加账号 */}

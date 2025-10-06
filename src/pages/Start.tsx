@@ -84,6 +84,14 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
     }
   };
 
+  // 是否为乘除法题型（隐藏范围）
+  const isMulDivType = (
+    config.questionType === 'multiply' ||
+    config.questionType === 'divide' ||
+    config.questionType === 'multiply_divide' ||
+    config.questionType === 'fill_multiply_divide'
+  );
+
   // 处理输入框失去焦点，防止清空所有数字
   const handleBlur = (key: string, shadowValue: string, defaultValue: number) => {
     const numValue = parseInt(shadowValue) || defaultValue;
@@ -241,7 +249,8 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
             </div>
           </div>
 
-          {/* 运算范围 */}
+          {/* 运算范围（乘除法题型隐藏）*/}
+          {!isMulDivType && (
           <div className="mb-8">
             <div className="flex justify-between items-center">
               <label className="text-lg font-semibold text-gray-800 dark:text-gray-200">运算范围</label>
@@ -277,6 +286,7 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
               指每个加数、减数、被减数等的最大值
             </p>
           </div>
+          )}
 
           {/* 开始练习按钮 */}
           <button
