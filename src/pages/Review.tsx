@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { colors } from '../styles/colors';
 import { getCurrentLevel, getNextLevel, getExpProgress } from '../types/gamification';
+import { GamificationService } from '../services/gamificationService';
 
 interface ReviewProps {
   onRestart: () => void;
@@ -131,6 +132,7 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
   // 撒花动画
   const confettiCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [confettiUrl, setConfettiUrl] = useState<string | null>(null);
   const playSuccess = () => {
     try {
       // 你当前的文件是 success.mp3，这里做多格式回退的解析
@@ -171,8 +173,17 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
   }>>([]);
   const [sortField, setSortField] = useState<string>('question');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  // 撒花动效 - 使用简单的Canvas动画
+  // 读取可配置的 Lottie 撒花 URL（优先），否则使用 Canvas 撒花作为兜底
   useEffect(() => {
+    try {
+      const url = localStorage.getItem('mp-confetti-url');
+      setConfettiUrl(url && url.trim() ? url : null);
+    } catch {}
+  }, []);
+
+  // 如果没有配置 Lottie URL，则使用 Canvas 动画兜底
+  useEffect(() => {
+    if (confettiUrl) return; // 使用 Lottie 时不启用 Canvas 撒花
     const canvas = confettiCanvasRef.current;
     if (!canvas) return;
 
@@ -258,7 +269,58 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
       }
       window.removeEventListener('resize', setSize);
     };
-  }, []);
+  }, [confettiUrl]);
+
+  // 当设置了 Lottie URL 时，按需加载 lottie-player 并显示一次动画
+  useEffect(() => {
+    if (!confettiUrl) return;
+    let scriptEl: HTMLScriptElement | null = null;
+    let containerEl: HTMLDivElement | null = null;
+    try {
+      // 注入 lottie-player 脚本（若未加载）
+      if (!(window as any).lottiePlayerLoaded) {
+        scriptEl = document.createElement('script');
+        scriptEl.src = 'https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js';
+        scriptEl.async = true;
+        scriptEl.onload = () => ((window as any).lottiePlayerLoaded = true);
+        document.head.appendChild(scriptEl);
+      }
+      // 创建覆盖层容器
+      containerEl = document.createElement('div');
+      containerEl.style.position = 'fixed';
+      containerEl.style.inset = '0';
+      containerEl.style.pointerEvents = 'none';
+      containerEl.style.zIndex = '10';
+      containerEl.style.display = 'flex';
+      containerEl.style.alignItems = 'center';
+      containerEl.style.justifyContent = 'center';
+      // 创建 lottie-player 元素
+      const player = document.createElement('lottie-player');
+      player.setAttribute('src', confettiUrl);
+      player.setAttribute('autoplay', '');
+      player.setAttribute('style', 'width:100%;height:100%;');
+      // 播放完成后自动移除
+      player.addEventListener('complete', () => {
+        if (containerEl && containerEl.parentNode) {
+          containerEl.parentNode.removeChild(containerEl);
+        }
+      });
+      containerEl.appendChild(player as unknown as Node);
+      document.body.appendChild(containerEl);
+    } catch {}
+    return () => {
+      try {
+        if (containerEl && containerEl.parentNode) {
+          containerEl.parentNode.removeChild(containerEl);
+        }
+      } catch {}
+      try {
+        if (scriptEl && scriptEl.parentNode) {
+          // 不强行移除脚本，避免重复加载；保留以供后续页面复用
+        }
+      } catch {}
+    };
+  }, [confettiUrl]);
   
   useEffect(() => {
     // 从localStorage获取成绩和配置
@@ -467,20 +529,18 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
     return () => clearTimeout(t);
   }, []);
 
-  // 等级提升检测
+  // 等级提升检测（使用服务，确保账号隔离）
   useEffect(() => {
-    const userProfile = JSON.parse(localStorage.getItem('mp-user-profile') || '{"exp": 0, "level": 1}');
-    const currentLevel = getCurrentLevel(userProfile.exp);
-    
-    // 如果等级提升了
-    if (currentLevel.level > userProfile.level) {
-      setShowLevelUp(true);
-      setTimeout(() => setLevelUpAnimation(true), 100);
-      
-      // 更新用户等级
-      const updatedProfile = { ...userProfile, level: currentLevel.level };
-      localStorage.setItem('mp-user-profile', JSON.stringify(updatedProfile));
-    }
+    try {
+      const gamification = GamificationService.getInstance();
+      const profile = gamification.getUserProfile();
+      const curr = getCurrentLevel(profile.exp);
+      if (curr.level > (profile.level || 1)) {
+        setShowLevelUp(true);
+        setTimeout(() => setLevelUpAnimation(true), 100);
+        gamification.saveUserProfile({ ...profile, level: curr.level });
+      }
+    } catch {}
   }, []);
 
   return (
@@ -591,9 +651,10 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
             )}
           </div>
           
-          {/* 等级进度条 */}
+          {/* 等级进度条（使用服务读取，确保账号隔离） */}
           {(() => {
-            const userProfile = JSON.parse(localStorage.getItem('mp-user-profile') || '{"exp": 0}');
+            const gamification = GamificationService.getInstance();
+            const userProfile = gamification.getUserProfile();
             const currentLevel = getCurrentLevel(userProfile.exp);
             const nextLevel = getNextLevel(userProfile.exp);
             const expProgress = getExpProgress(userProfile.exp);

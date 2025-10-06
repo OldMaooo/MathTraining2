@@ -29,6 +29,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [accountName, setAccountName] = useState('');
   const [hoveredAccountId, setHoveredAccountId] = useState<string | null>(null);
+  const [showDebugChip, setShowDebugChip] = useState<boolean>(true);
 
   useEffect(() => {
     try {
@@ -782,6 +783,36 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                 已有账号，立即登录
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* 右下角调试小面板：用于可视化验证账号-数据隔离 */}
+      {showDebugChip && (
+        <div className="fixed bottom-3 right-3 z-50 select-none">
+          <div className="bg-black/70 text-white text-xs rounded px-3 py-2 shadow-lg space-y-1">
+            <div className="flex items-center justify-between space-x-3">
+              <div className="font-semibold">调试</div>
+              <button
+                onClick={() => setShowDebugChip(false)}
+                className="text-white/60 hover:text-white"
+                title="隐藏"
+              >
+                ×
+              </button>
+            </div>
+            <div>账号: {currentAccount?.name} ({currentAccount?.id?.slice(-6)}) {currentAccount?.type === 'admin' ? '[ADMIN]' : ''}</div>
+            <div>存储后缀: _{currentAccount?.id}</div>
+            <div>EXP/Level/Streak: {profile.exp} / {getCurrentLevel(profile.exp).level} / {profile.streak}</div>
+            {(() => {
+              try {
+                const daily = GamificationService.getInstance().getDailyStats();
+                return (
+                  <div>今日: {daily.questionsAnswered}题 / {daily.correctAnswers}对 / {(daily.totalTime/1000)|0}s</div>
+                );
+              } catch {
+                return null;
+              }
+            })()}
           </div>
         </div>
       )}
