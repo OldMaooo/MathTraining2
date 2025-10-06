@@ -140,8 +140,11 @@ export class GamificationService {
     const profile = this.getUserProfile();
     const today = new Date().toISOString().split('T')[0];
     
-    if (profile.lastActiveDate === today) {
-      // 今天已经更新过了
+    // 若今天已有答题活动但 lastActiveDate 仍不是今天，则也视为达成今日连胜（修复“今日答题但连胜仍为0”）
+    // 统计中 questionsAnswered > 0 代表今天有活动
+    const todayStats = this.getDailyStats();
+    const hasActivityToday = todayStats.date === today && (todayStats.questionsAnswered > 0 || todayStats.totalTime > 0);
+    if (profile.lastActiveDate === today && !hasActivityToday) {
       return;
     }
 

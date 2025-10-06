@@ -195,6 +195,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     accuracy: 80, // 正确率百分比
     autoCount: 5, // 自动做题数量
   });
+  const autoAnswerTimerRef = useRef<number | null>(null);
   const [autoAnsweredCount, setAutoAnsweredCount] = useState(0);
   const [debugStatus, setDebugStatus] = useState('空闲');
   const [isSubmittingHistory, setIsSubmittingHistory] = useState<Array<{timestamp: string, status: string}>>([]);
@@ -738,7 +739,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             setAutoAnsweredCount(0);
   }, []);
 
-  // 自动答题逻辑
+  // 自动答题逻辑（管理员一键做题）
   useEffect(() => {
     if (!autoAnswerSettings.enabled || !isAdmin || questions.length === 0) return;
     if (autoAnsweredCount >= autoAnswerSettings.autoCount) return;
@@ -748,21 +749,23 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     const currentQ = questions[currentQuestion];
     if (!currentQ) return;
 
-    // 延迟自动答题，让用户看到题目
-      const timer = setTimeout(() => {
+    // 0.6-1.2秒的更快自动答题节奏
+    const delay = 600 + Math.random() * 600;
+    const timer = window.setTimeout(() => {
       const shouldAnswerCorrectly = Math.random() * 100 < autoAnswerSettings.accuracy;
       const answer = shouldAnswerCorrectly ? currentQ.correctAnswer : currentQ.correctAnswer + (Math.random() > 0.5 ? 1 : -1);
-      
       setUserAnswer(answer.toString());
       setAutoAnsweredCount(prev => prev + 1);
-      
-      // 自动提交答案
-        setTimeout(() => {
-        handleSubmit();
-      }, 500);
-    }, 1000 + Math.random() * 2000); // 1-3秒随机延迟
+      window.setTimeout(() => handleSubmit(), 200);
+    }, delay);
+    autoAnswerTimerRef.current = timer;
 
-      return () => clearTimeout(timer);
+    return () => {
+      if (autoAnswerTimerRef.current) {
+        clearTimeout(autoAnswerTimerRef.current);
+        autoAnswerTimerRef.current = null;
+      }
+    };
   }, [currentQuestion, autoAnswerSettings, isAdmin, questions, autoAnsweredCount, isSubmitting]);
   
   // 计时器（READY/GO 动画期间暂停倒计时）
@@ -1614,6 +1617,12 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
 
             {/* 自动答题控制 */}
             <div className="mt-3 pt-2 border-t border-gray-600">
+            <div className="mb-2">
+              <button
+                onClick={() => setAutoAnswerSettings(prev => ({ ...prev, enabled: !prev.enabled }))}
+                className="text-xs px-2 py-1 rounded bg-blue-600 hover:bg-blue-700"
+              >{autoAnswerSettings.enabled ? '停止一键做题' : '开始一键做题'}</button>
+            </div>
               <div className="mb-2">
                 <label className="flex items-center space-x-2">
                   <input
