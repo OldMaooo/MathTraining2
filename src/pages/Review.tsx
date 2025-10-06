@@ -171,15 +171,12 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
   }>>([]);
   const [sortField, setSortField] = useState<string>('question');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  // Confetti (dotLottie) - 总是播放
-  const lottieBase = (import.meta as any).env?.BASE_URL || '/';
-  const confettiSrc = `${lottieBase}sfx/Confetti.lottie`;
+  // 撒花动效 - 使用简单的Canvas动画
   useEffect(() => {
     const canvas = confettiCanvasRef.current;
-    const DotLottie = (window as any).DotLottie;
-    console.log('[Confetti] init', { hasCanvas: !!canvas, hasDotLottie: !!DotLottie, confettiSrc });
-    if (!canvas || !DotLottie) return;
-    // 全屏尺寸
+    if (!canvas) return;
+
+    // 设置canvas尺寸
     const setSize = () => {
       try {
         const w = window.innerWidth || document.documentElement.clientWidth || 375;
@@ -190,26 +187,75 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
     };
     setSize();
     window.addEventListener('resize', setSize);
-    let player: any;
-    try {
-      player = new DotLottie({
-        autoplay: true,
-        loop: false,
-        canvas,
-        src: confettiSrc,
-        renderConfig: { autoResize: true, devicePixelRatio: 1 },
+
+    // 简单的撒花动画
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const confettiPieces: Array<{
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      color: string;
+      size: number;
+      rotation: number;
+      rotationSpeed: number;
+    }> = [];
+
+    // 创建彩纸片
+    const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff'];
+    for (let i = 0; i < 100; i++) {
+      confettiPieces.push({
+        x: Math.random() * canvas.width,
+        y: -10,
+        vx: (Math.random() - 0.5) * 4,
+        vy: Math.random() * 3 + 2,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        size: Math.random() * 8 + 4,
+        rotation: Math.random() * 360,
+        rotationSpeed: (Math.random() - 0.5) * 10
       });
-      player.addEventListener?.('load', () => {
-        console.log('[Confetti] load');
-        try { player.play?.(); } catch {}
-      });
-      player.addEventListener?.('complete', () => console.log('[Confetti] complete'));
-      player.addEventListener?.('error', (e: any) => console.warn('[Confetti] error', e));
-    } catch (e) {
-      console.warn('[Confetti] init failed', e);
     }
+
+    let animationId: number;
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      confettiPieces.forEach((piece, index) => {
+        // 更新位置
+        piece.x += piece.vx;
+        piece.y += piece.vy;
+        piece.vy += 0.1; // 重力
+        piece.rotation += piece.rotationSpeed;
+
+        // 绘制彩纸片
+        ctx.save();
+        ctx.translate(piece.x, piece.y);
+        ctx.rotate(piece.rotation * Math.PI / 180);
+        ctx.fillStyle = piece.color;
+        ctx.fillRect(-piece.size/2, -piece.size/2, piece.size, piece.size);
+        ctx.restore();
+
+        // 移除超出屏幕的彩纸片
+        if (piece.y > canvas.height + 50) {
+          confettiPieces.splice(index, 1);
+        }
+      });
+
+      // 继续动画
+      if (confettiPieces.length > 0) {
+        animationId = requestAnimationFrame(animate);
+      }
+    };
+
+    // 开始动画
+    animate();
+
     return () => {
-      try { player?.destroy?.(); } catch {}
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
       window.removeEventListener('resize', setSize);
     };
   }, []);
