@@ -1,5 +1,6 @@
 import type { UserProfile, DailyTasks, DailyStats, RandomBonusData, ExpGain, TaskInfo } from '../types/gamification';
 import { STORAGE_KEYS, LEVELS, EXP_RULES } from '../types/gamification';
+import { AccountService } from './accountService';
 
 export class GamificationService {
   private static instance: GamificationService;
@@ -13,9 +14,28 @@ export class GamificationService {
     return GamificationService.instance;
   }
 
+  // 获取当前账号ID
+  private getCurrentAccountId(): string {
+    try {
+      const accountService = AccountService.getInstance();
+      const currentAccount = accountService.getCurrentAccount();
+      return currentAccount?.id || 'default';
+    } catch (error) {
+      console.error('Error getting current account ID:', error);
+      return 'default';
+    }
+  }
+
+  // 获取账号特定的存储键
+  private getAccountStorageKey(baseKey: string): string {
+    const accountId = this.getCurrentAccountId();
+    return `${baseKey}_${accountId}`;
+  }
+
   // 获取用户档案
   getUserProfile(): UserProfile {
-    const stored = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+    const storageKey = this.getAccountStorageKey(STORAGE_KEYS.USER_PROFILE);
+    const stored = localStorage.getItem(storageKey);
     if (stored) {
       return JSON.parse(stored);
     }
@@ -37,7 +57,8 @@ export class GamificationService {
 
   // 保存用户档案
   saveUserProfile(profile: UserProfile): void {
-    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
+    const storageKey = this.getAccountStorageKey(STORAGE_KEYS.USER_PROFILE);
+    localStorage.setItem(storageKey, JSON.stringify(profile));
     try {
       console.log('[Gamification] saveUserProfile', profile);
       window.dispatchEvent(new CustomEvent('mp-profile-updated'));
@@ -142,7 +163,8 @@ export class GamificationService {
 
   // 获取每日任务
   getDailyTasks(): DailyTasks {
-    const stored = localStorage.getItem(STORAGE_KEYS.DAILY_TASKS);
+    const storageKey = this.getAccountStorageKey(STORAGE_KEYS.DAILY_TASKS);
+    const stored = localStorage.getItem(storageKey);
     if (stored) {
       return JSON.parse(stored);
     }
@@ -165,7 +187,8 @@ export class GamificationService {
 
   // 保存每日任务
   saveDailyTasks(tasks: DailyTasks): void {
-    localStorage.setItem(STORAGE_KEYS.DAILY_TASKS, JSON.stringify(tasks));
+    const storageKey = this.getAccountStorageKey(STORAGE_KEYS.DAILY_TASKS);
+    localStorage.setItem(storageKey, JSON.stringify(tasks));
   }
 
   // 更新每日任务
@@ -196,7 +219,8 @@ export class GamificationService {
 
   // 获取随机奖励数据
   getRandomBonusData(): RandomBonusData {
-    const stored = localStorage.getItem(STORAGE_KEYS.RANDOM_BONUS);
+    const storageKey = this.getAccountStorageKey(STORAGE_KEYS.RANDOM_BONUS);
+    const stored = localStorage.getItem(storageKey);
     if (stored) {
       return JSON.parse(stored);
     }
@@ -214,7 +238,8 @@ export class GamificationService {
 
   // 保存随机奖励数据
   saveRandomBonusData(data: RandomBonusData): void {
-    localStorage.setItem(STORAGE_KEYS.RANDOM_BONUS, JSON.stringify(data));
+    const storageKey = this.getAccountStorageKey(STORAGE_KEYS.RANDOM_BONUS);
+    localStorage.setItem(storageKey, JSON.stringify(data));
   }
 
   // 更新随机奖励数据
@@ -234,7 +259,8 @@ export class GamificationService {
 
   // 获取每日统计
   getDailyStats(): DailyStats {
-    const stored = localStorage.getItem(STORAGE_KEYS.DAILY_STATS);
+    const storageKey = this.getAccountStorageKey(STORAGE_KEYS.DAILY_STATS);
+    const stored = localStorage.getItem(storageKey);
     if (stored) {
       return JSON.parse(stored);
     }
@@ -254,6 +280,7 @@ export class GamificationService {
 
   // 保存每日统计
   saveDailyStats(stats: DailyStats): void {
-    localStorage.setItem(STORAGE_KEYS.DAILY_STATS, JSON.stringify(stats));
+    const storageKey = this.getAccountStorageKey(STORAGE_KEYS.DAILY_STATS);
+    localStorage.setItem(storageKey, JSON.stringify(stats));
   }
 }
