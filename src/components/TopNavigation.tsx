@@ -214,7 +214,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
   // 生成周历数据（周一开始），并计算今日/历史/未来可得分（封顶+8）
   const generateWeekCalendar = () => {
     const today = new Date();
-    const week: Array<{date:string; dayName:string; isToday:boolean; hasStreak:boolean; isTodayStreak:boolean; expValue:number; potentialToday:number}> = [];
+    const week: Array<{date:string; dayName:string; isToday:boolean; hasStreak:boolean; isTodayStreak:boolean; expValue:number; potentialToday:number; futurePotential:number}> = [];
     const todayStr = today.toISOString().split('T')[0];
     // 本周周一
     const day = today.getDay(); // 0=周日
@@ -231,9 +231,13 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
       const isToday = dateStr === todayStr;
       const dayName = ['一', '二', '三', '四', '五', '六', '日'][i];
       const daysAgo = Math.floor((today.getTime() - date.getTime()) / (24 * 3600 * 1000));
+      const daysAhead = Math.floor((date.getTime() - today.getTime()) / (24 * 3600 * 1000));
       const isTodayStreak = isToday && profile.streak > 0;
       const hasStreak = !isToday && daysAgo > 0 && daysAgo <= profile.streak;
       const historyExp = hasStreak ? Math.min(2 + (profile.streak - daysAgo), 8) : 0;
+      const futurePotential = !isToday && daysAhead > 0
+        ? Math.min(2 + Math.max(0, profile.streak + (isTodayStreak ? 0 : 0) + daysAhead), 8)
+        : 0;
 
       week.push({
         date: dateStr,
@@ -242,7 +246,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
         hasStreak,
         isTodayStreak,
         expValue: historyExp,
-        potentialToday: isToday ? potentialToday : 0
+        potentialToday: isToday ? potentialToday : 0,
+        futurePotential
       });
     }
     return week;
@@ -475,7 +480,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                           ) : (
                             day.hasStreak
                               ? (day.expValue > 0 && <div className="text-sm text-green-600 dark:text-green-400 font-medium mt-1 opacity-40">+{day.expValue}</div>)
-                              : <div className="text-sm text-gray-400 font-medium mt-1">+{Math.min(2 + Math.max(0, profile.streak - Math.max(0, (today.getTime() - new Date(day.date).getTime())/(24*3600*1000))), 8)}</div>
+                              : <div className="text-sm text-gray-400 font-medium mt-1">+{day.futurePotential}</div>
                           )}
                         </div>
                       ))}
