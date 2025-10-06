@@ -140,11 +140,12 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
             <div className="grid grid-cols-5 gap-2 mt-3">
               {[5, 10, 20, 30, 50].map((count) => (
                 <button
+                  type="button"
                   key={count}
                   onClick={() => handleConfigChange('questionCount', count)}
                   className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
                     config.questionCount === count
-                      ? 'bg-blue-500 text-white shadow-md'
+                      ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-300'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
@@ -173,11 +174,12 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
             <div className="flex gap-2 mt-3">
               {[3, 5, 10].map((time) => (
                 <button
+                  type="button"
                   key={time}
                   onClick={() => handleConfigChange('timeLimit', time)}
                   className={`flex-1 px-3 py-1 rounded-lg text-sm font-medium transition-all ${
                     config.timeLimit === time
-                      ? 'bg-blue-500 text-white shadow-md'
+                      ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-300'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
@@ -185,10 +187,11 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
                 </button>
               ))}
               <button
+                type="button"
                 onClick={() => handleConfigChange('timeLimit', 0.87)}
                 className={`w-32 px-3 py-1 rounded-lg text-sm font-medium transition-all ${
                   config.timeLimit === 0.87
-                    ? 'bg-blue-500 text-white shadow-md'
+                    ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-300'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
@@ -212,11 +215,12 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
                 { type: 'fill_multiply_divide', name: '乘除法填空' },
               ].map((qType) => (
                 <button
+                  type="button"
                   key={qType.type}
                   onClick={() => handleConfigChange('questionType', qType.type)}
                   className={`px-4 py-2 rounded-lg text-base font-medium transition-all ${
                     config.questionType === qType.type
-                      ? 'bg-blue-500 text-white shadow-md'
+                      ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-300'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
@@ -224,10 +228,11 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
                 </button>
               ))}
               <button
+                type="button"
                 onClick={() => handleConfigChange('questionType', 'all_four')}
                 className={`col-span-2 px-4 py-2 rounded-lg text-base font-medium transition-all ${
                   config.questionType === 'all_four'
-                    ? 'bg-blue-500 text-white shadow-md'
+                    ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-300'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
@@ -255,11 +260,12 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
             <div className="grid grid-cols-4 gap-2 mt-3">
               {[20, 50, 100, 1000].map((r) => (
                 <button
+                  type="button"
                   key={r}
                   onClick={() => handleConfigChange('range', r)}
                   className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
                     config.range === r
-                      ? 'bg-blue-500 text-white shadow-md'
+                      ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-300'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
