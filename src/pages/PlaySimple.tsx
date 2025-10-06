@@ -331,6 +331,9 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
   // 开场动画逻辑
   useEffect(() => {
     if (showReadyAnimation) {
+      // READY 开始即暂停
+      setIsPaused(true);
+      setPauseStartTime(Date.now());
       playSfx('start');
       const timer = setTimeout(() => {
         setShowReadyAnimation(false);
@@ -775,9 +778,8 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
         });
       }
     }, 1000);
-    
     return () => clearInterval(timer);
-  }, [onFinish, isPaused]);
+  }, [onFinish, isPaused, showReadyAnimation, showGoAnimation]);
   
   // 键盘输入处理
   useEffect(() => {

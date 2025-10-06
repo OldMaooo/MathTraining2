@@ -551,9 +551,9 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                           )}
                         </div>
                       </div>
-                      {/* 今日如何获得连胜 */}
-                      <div className="mt-3 text-xs text-gray-600 dark:text-gray-400">
-                        今日如何获得连胜：完成一轮练习即可记为今日连胜。
+                      {/* 今日如何获得连胜（明确显示在面板底部）*/}
+                      <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-300">
+                        今日如何获得连胜：当日完成至少一轮练习，即记为今日连胜。
                       </div>
 
                       {/* 最近切换的账号 */}
