@@ -30,6 +30,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
   const [accountName, setAccountName] = useState('');
   const [hoveredAccountId, setHoveredAccountId] = useState<string | null>(null);
   const [showDebugChip, setShowDebugChip] = useState<boolean>(true);
+  const [showStreakRules, setShowStreakRules] = useState<boolean>(false);
 
   useEffect(() => {
     try {
@@ -437,17 +438,15 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                     <div className="text-left">
                     <div className="text-lg font-bold text-gray-900 dark:text-white">
                       {profile.streak}日连胜
-                      {/* 规则提示 i 圈 */}
-                      <span className="inline-flex items-center justify-center ml-2 align-middle">
-                        <span className="relative group">
-                          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-gray-400 text-[10px] text-gray-600">i</span>
-                          <span className="absolute left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap bg-black text-white text-[10px] rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            获得连胜：当天完成至少一轮练习；连续天数不中断递增。
-                            周期：从周一开始到周日结束；断开后次日从+2重新开始；每日加成封顶+7。
-                            今日获取连胜条件：今天完成一轮练习即可记为今日连胜。
-                          </span>
-                        </span>
-                      </span>
+                      {/* 规则 i 圈（点击打开弹窗） */}
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center ml-2 w-4 h-4 rounded-full border border-gray-400 text-[10px] text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => setShowStreakRules(true)}
+                        title="查看连胜规则"
+                      >
+                        i
+                      </button>
                     </div>
                     <div className="flex justify-center space-x-1 mt-3">
                       {weekCalendar.map((day, index) => (
@@ -552,6 +551,10 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                           )}
                         </div>
                       </div>
+                      {/* 今日如何获得连胜 */}
+                      <div className="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                        今日如何获得连胜：完成一轮练习即可记为今日连胜。
+                      </div>
 
                       {/* 最近切换的账号 */}
                       {recentAccounts.map(account => (
@@ -604,32 +607,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                     >
                       错题管理
                     </button>
-                    {/* 随机奖励 */}
-                    <button
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      onClick={() => {
-                        try {
-                          const g = GamificationService.getInstance();
-                          const data = g.getRandomBonusData();
-                          if (data.used >= data.maxPerDay) {
-                            alert(`今日随机奖励已用完 (${data.used}/${data.maxPerDay})`);
-                            return;
-                          }
-                          // 掷骰奖励：1~3 EXP
-                          const bonus = Math.floor(Math.random() * 3) + 1;
-                          g.addExp(bonus);
-                          g.updateRandomBonusData(1);
-                          g.updateDailyTasks('random_bonus', 1);
-                          alert(`获得随机奖励 +${bonus} EXP`);
-                        } catch (e) {
-                          console.error('随机奖励失败', e);
-                        } finally {
-                          setShowUserMenu(false);
-                        }
-                      }}
-                    >
-                      随机奖励
-                    </button>
+                    {/* 随机奖励移动到任务中心 */}
                     
                     {/* 深色模式切换 */}
                     <button
@@ -652,7 +630,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* 任务中心弹窗 */}
+            {/* 任务中心弹窗 */
+            }
       {showTaskCenter && (
         <div 
           className="task-center absolute top-16 right-4 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
@@ -702,10 +681,35 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                       {task.name}
                     </span>
                   </div>
-                  <div className={`text-sm font-bold ${
-                    task.completed ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
-                  }`}>
-                    +{task.expReward} EXP
+                  <div className="flex items-center space-x-2">
+                    <div className={`text-sm font-bold ${
+                      task.completed ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                      +{task.expReward} EXP
+                    </div>
+                    {task.id === 'random_bonus' && !task.completed && (
+                      <button
+                        className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
+                        onClick={() => {
+                          try {
+                            const g = GamificationService.getInstance();
+                            const data = g.getRandomBonusData();
+                            if (data.used >= data.maxPerDay) {
+                              alert(`今日随机奖励已用完 (${data.used}/${data.maxPerDay})`);
+                              return;
+                            }
+                            // 按每日上限允许领取一次（任务target为1）
+                            const bonus = Math.floor(Math.random() * 3) + 1; // 1~3
+                            g.addExp(bonus);
+                            g.updateRandomBonusData(1);
+                            g.updateDailyTasks('random_bonus', 1);
+                            alert(`获得随机奖励 +${bonus} EXP`);
+                          } catch (e) {
+                            console.error('随机奖励失败', e);
+                          }
+                        }}
+                      >领取</button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -848,6 +852,25 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                 return null;
               }
             })()}
+          </div>
+        </div>
+      )}
+      {/* 连胜规则弹窗 */}
+      {showStreakRules && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setShowStreakRules(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-5 w-[520px] max-w-[90%]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-base font-semibold text-gray-900 dark:text-white">连胜规则</div>
+              <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" onClick={() => setShowStreakRules(false)}>×</button>
+            </div>
+            <div className="text-sm leading-6 text-gray-700 dark:text-gray-300 space-y-2">
+              <p>获得连胜：当天完成至少一轮练习；连续天数不中断递增。</p>
+              <p>周期：从周一开始到周日结束；断开后次日从 +2 重新开始；每日加成封顶 +7。</p>
+              <p>提示：面板底部已显示“今日如何获得连胜”。</p>
+            </div>
+            <div className="mt-4 text-right">
+              <button className="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700" onClick={() => setShowStreakRules(false)}>知道了</button>
+            </div>
           </div>
         </div>
       )}
