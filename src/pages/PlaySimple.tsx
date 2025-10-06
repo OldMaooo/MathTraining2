@@ -1547,11 +1547,11 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             </div>
       </div>
 
-        <div className="text-center">
+                  <div className="text-center">
                     <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-                      {isPaused ? '⏸️ 暂停' : `${timeLeft}秒`}
+                      {(showReadyAnimation || showGoAnimation) ? `${timeLeft}秒` : (isPaused ? '⏸️ 暂停' : `${timeLeft}秒`)}
                     </div>
-          </div>
+                  </div>
           
           <div className="flex items-center space-x-3">
             <button

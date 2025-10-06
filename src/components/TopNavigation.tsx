@@ -211,7 +211,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
     percentage: nextLevelExp > currentLevelExp ? Math.min(100, Math.max(0, ((profile.exp - currentLevelExp) / (nextLevelExp - currentLevelExp)) * 100)) : 100
   };
 
-  // 生成周历数据（周一开始），并计算今日可得分
+  // 生成周历数据（周一开始），并计算今日/历史/未来可得分（封顶+8）
   const generateWeekCalendar = () => {
     const today = new Date();
     const week: Array<{date:string; dayName:string; isToday:boolean; hasStreak:boolean; isTodayStreak:boolean; expValue:number; potentialToday:number}> = [];
@@ -222,7 +222,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
     const monday = new Date(today);
     monday.setDate(today.getDate() - diffToMonday);
 
-    const potentialToday = Math.min(2 + Math.max(0, profile.streak), 7);
+    const potentialToday = Math.min(2 + Math.max(0, profile.streak), 8);
 
     for (let i = 0; i < 7; i++) {
       const date = new Date(monday);
@@ -233,7 +233,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
       const daysAgo = Math.floor((today.getTime() - date.getTime()) / (24 * 3600 * 1000));
       const isTodayStreak = isToday && profile.streak > 0;
       const hasStreak = !isToday && daysAgo > 0 && daysAgo <= profile.streak;
-      const historyExp = hasStreak ? Math.min(2 + (profile.streak - daysAgo), 7) : 0;
+      const historyExp = hasStreak ? Math.min(2 + (profile.streak - daysAgo), 8) : 0;
 
       week.push({
         date: dateStr,
@@ -462,12 +462,20 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                           }`}>
                             {day.isTodayStreak || day.hasStreak ? '✓' : day.dayName}
                           </div>
-                          {day.isToday && !day.isTodayStreak ? (
-                            <div className="text-sm text-gray-400 font-medium mt-1">+{day.potentialToday}</div>
+                          {/* 经验值显示四种状态：
+                              1) 历史未获得：空（无加成数字）
+                              2) 今天已获得：绿色 + 勾 + 绿色加成
+                              3) 历史已获得：半透明绿色 + 勾 + 半透明绿色加成
+                              4) 未来：空心圈 + 灰字 + 可获得加成（灰色）
+                           */}
+                          {day.isToday ? (
+                            day.isTodayStreak
+                              ? <div className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">+{day.potentialToday}</div>
+                              : <div className="text-sm text-gray-400 font-medium mt-1">+{day.potentialToday}</div>
                           ) : (
-                            day.expValue > 0 && (
-                              <div className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">+{day.expValue}</div>
-                            )
+                            day.hasStreak
+                              ? (day.expValue > 0 && <div className="text-sm text-green-600 dark:text-green-400 font-medium mt-1 opacity-40">+{day.expValue}</div>)
+                              : <div className="text-sm text-gray-400 font-medium mt-1">+{Math.min(2 + Math.max(0, profile.streak - Math.max(0, (today.getTime() - new Date(day.date).getTime())/(24*3600*1000))), 8)}</div>
                           )}
                         </div>
                       ))}
@@ -865,8 +873,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
             </div>
             <div className="text-sm leading-6 text-gray-700 dark:text-gray-300 space-y-2">
               <p>获得连胜：当天完成至少一轮练习；连续天数不中断递增。</p>
-              <p>周期：从周一开始到周日结束；断开后次日从 +2 重新开始；每日加成封顶 +7。</p>
-              <p>提示：面板底部已显示“今日如何获得连胜”。</p>
+              <p>周期：从周一开始到周日结束；断开后次日从 +2 重新开始；每日加成封顶 +8。</p>
             </div>
             <div className="mt-4 text-right">
               <button className="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700" onClick={() => setShowStreakRules(false)}>知道了</button>
