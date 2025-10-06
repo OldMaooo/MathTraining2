@@ -14,6 +14,10 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
   });
   
   const [hasWrongSet, setHasWrongSet] = useState(false);
+  // 是否已有选择（用于控制默认不高亮）
+  const [hasQCSelected, setHasQCSelected] = useState(false);
+  const [hasTLSelected, setHasTLSelected] = useState(false);
+  const [hasRangeSelected, setHasRangeSelected] = useState(false);
   
   // 影子状态管理输入值，防止清空所有数字
   const [shadowQuestionCount, setShadowQuestionCount] = useState(config.questionCount.toString());
@@ -33,16 +37,19 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
       const rangeValue = parseInt(savedRange);
       setConfig(prev => ({ ...prev, range: rangeValue }));
       setShadowRange(rangeValue.toString());
+      setHasRangeSelected(true);
     }
     if (savedQuestionCount) {
       const countValue = parseInt(savedQuestionCount);
       setConfig(prev => ({ ...prev, questionCount: countValue }));
       setShadowQuestionCount(countValue.toString());
+      setHasQCSelected(true);
     }
     if (savedTimeLimit) {
       const timeValue = parseInt(savedTimeLimit);
       setConfig(prev => ({ ...prev, timeLimit: timeValue }));
       setShadowTimeLimit(timeValue.toString());
+      setHasTLSelected(true);
     }
 
     const wrongQuestions = JSON.parse(localStorage.getItem('mp-wrong-questions') || '[]');
@@ -75,10 +82,13 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
     // 同步影子状态与输入框显示，保持点击后高亮与数值一致
     if (key === 'questionCount') {
       setShadowQuestionCount(String(value));
+      setHasQCSelected(true);
     } else if (key === 'timeLimit') {
       setShadowTimeLimit(String(value));
+      setHasTLSelected(true);
     } else if (key === 'range') {
       setShadowRange(String(value));
+      setHasRangeSelected(true);
     } else if (key === 'questionType') {
       // 题型无需同步影子数值
     }
@@ -152,7 +162,7 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
                   key={count}
                   onClick={() => handleConfigChange('questionCount', count)}
                   className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
-                    config.questionCount === count
+                    (config.questionCount === count && hasQCSelected)
                       ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-300'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
@@ -186,7 +196,7 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
                   key={time}
                   onClick={() => handleConfigChange('timeLimit', time)}
                   className={`flex-1 px-3 py-1 rounded-lg text-sm font-medium transition-all ${
-                    config.timeLimit === time
+                    (config.timeLimit === time && hasTLSelected)
                       ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-300'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
@@ -198,7 +208,7 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
                 type="button"
                 onClick={() => handleConfigChange('timeLimit', 0.87)}
                 className={`w-32 px-3 py-1 rounded-lg text-sm font-medium transition-all ${
-                  config.timeLimit === 0.87
+                  (config.timeLimit === 0.87 && hasTLSelected)
                     ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-300'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
@@ -273,7 +283,7 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
                   key={r}
                   onClick={() => handleConfigChange('range', r)}
                   className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
-                    config.range === r
+                    (config.range === r && hasRangeSelected)
                       ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-300'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
