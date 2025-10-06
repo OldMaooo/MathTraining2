@@ -5,12 +5,18 @@ interface StartProps {
 }
 
 export const Start: React.FC<StartProps> = ({ onStart }) => {
-  
-  const [config, setConfig] = useState({
-    questionType: 'borrow' as 'borrow' | 'carry' | 'mixed' | 'multiply' | 'divide' | 'multiply_divide' | 'all_four' | 'fill_add_subtract' | 'fill_multiply_divide',
-    range: 20,
-    questionCount: 10,
-    timeLimit: 5
+  // 首次渲染前从 localStorage 同步读取，避免默认值闪烁/覆盖
+  const [config, setConfig] = useState(() => {
+    const savedQuestionType = (localStorage.getItem('questionType') as any) || 'borrow';
+    const savedRange = parseInt(localStorage.getItem('range') || '20');
+    const savedQuestionCount = parseInt(localStorage.getItem('questionCount') || '10');
+    const savedTimeLimit = parseInt(localStorage.getItem('timeLimit') || '5');
+    return {
+      questionType: savedQuestionType as 'borrow' | 'carry' | 'mixed' | 'multiply' | 'divide' | 'multiply_divide' | 'all_four' | 'fill_add_subtract' | 'fill_multiply_divide',
+      range: savedRange,
+      questionCount: savedQuestionCount,
+      timeLimit: savedTimeLimit,
+    };
   });
   
   const [hasWrongSet, setHasWrongSet] = useState(false);
@@ -21,29 +27,10 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
   const [shadowRange, setShadowRange] = useState(config.range.toString());
 
   useEffect(() => {
-    const savedQuestionType = localStorage.getItem('questionType');
-    const savedRange = localStorage.getItem('range');
-    const savedQuestionCount = localStorage.getItem('questionCount');
-    const savedTimeLimit = localStorage.getItem('timeLimit');
-
-    if (savedQuestionType) {
-      setConfig(prev => ({ ...prev, questionType: savedQuestionType as any }));
-    }
-    if (savedRange) {
-      const rangeValue = parseInt(savedRange);
-      setConfig(prev => ({ ...prev, range: rangeValue }));
-      setShadowRange(rangeValue.toString());
-    }
-    if (savedQuestionCount) {
-      const countValue = parseInt(savedQuestionCount);
-      setConfig(prev => ({ ...prev, questionCount: countValue }));
-      setShadowQuestionCount(countValue.toString());
-    }
-    if (savedTimeLimit) {
-      const timeValue = parseInt(savedTimeLimit);
-      setConfig(prev => ({ ...prev, timeLimit: timeValue }));
-      setShadowTimeLimit(timeValue.toString());
-    }
+    // 将已加载的配置同步到影子输入，确保进首页时显示为上次数值
+    setShadowRange(String(config.range));
+    setShadowQuestionCount(String(config.questionCount));
+    setShadowTimeLimit(String(config.timeLimit));
 
     const wrongQuestions = JSON.parse(localStorage.getItem('mp-wrong-questions') || '[]');
     setHasWrongSet(wrongQuestions.length > 0);

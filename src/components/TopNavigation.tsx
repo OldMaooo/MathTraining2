@@ -479,6 +479,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                             <div>正确率: <span className="font-medium text-gray-900 dark:text-white">{accuracy}%</span></div>
                             <div>平均用时: <span className="font-medium text-gray-900 dark:text-white">{avgTime}秒</span></div>
                             <div>答题总时长: <span className="font-medium text-gray-900 dark:text-white">{totalTimeSec}秒</span></div>
+                            <div className="text-gray-400">i</div>
                           </div>
                         </div>
                       );

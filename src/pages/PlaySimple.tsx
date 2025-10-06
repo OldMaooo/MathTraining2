@@ -756,10 +756,10 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     return () => clearTimeout(timer);
   }, [currentQuestion, autoAnswerSettings, isAdmin, questions, autoAnsweredCount, isSubmitting]);
   
-  // 计时器
+  // 计时器（READY/GO 动画期间暂停倒计时）
   useEffect(() => {
     const timer = setInterval(() => {
-      if (!isPaused) {
+      if (!isPaused && !showReadyAnimation && !showGoAnimation) {
         setTimeLeft(prev => {
           if (prev <= 1) {
             onFinish();
