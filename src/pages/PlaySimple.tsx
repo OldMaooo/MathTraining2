@@ -323,7 +323,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
         timestamp: new Date().toLocaleTimeString(),
         status: '提交中'
       }]);
-    } else {
+          } else {
       setDebugStatus('空闲');
     }
   }, [isSubmitting]);
@@ -344,6 +344,12 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     if (showGoAnimation) {
       const timer = setTimeout(() => {
         setShowGoAnimation(false);
+        // READY/GO结束后确保恢复计时
+        if (pauseStartTime) {
+          setTotalPauseTime(prev => prev + (Date.now() - pauseStartTime));
+          setPauseStartTime(null);
+        }
+        setIsPaused(false);
       }, 1000); // 停留1秒
       return () => clearTimeout(timer);
     }
@@ -493,7 +499,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               const c = Math.floor(Math.random() * 20) + 1;
               const firstResult = a * b;
               const finalResult = firstResult / a + c;
-              return { 
+    return {
                 a: firstResult, 
                 b: a, 
                 operation: '÷' as const, 
@@ -533,7 +539,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                 question = { 
                   a: b, 
                   b: result, 
-                  operation: '+', 
+      operation: '+',
                   correctAnswer: a, 
                   displayText: `? + ${b} = ${result}`,
                   isFillBlank: true,
@@ -565,7 +571,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               question = { 
                 a: b, 
                 b: result, 
-                operation: '-', 
+      operation: '-',
                 correctAnswer: a, 
                 displayText: `? - ${b} = ${result}`,
                 isFillBlank: true,
@@ -596,7 +602,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               question = { 
                 a: b, 
                 b: result, 
-                operation: '×', 
+      operation: '×',
                 correctAnswer: a, 
                 displayText: `? × ${b} = ${result}`,
                 isFillBlank: true,
@@ -623,7 +629,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               question = { 
                 a: quotient, // 商
                 b: divisor, // 除数
-                operation: '÷', 
+      operation: '÷',
                 correctAnswer: dividend, // 被除数
                 displayText: `? ÷ ${divisor} = ${quotient}`,
                 isFillBlank: true,
@@ -740,7 +746,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     if (!currentQ) return;
 
     // 延迟自动答题，让用户看到题目
-    const timer = setTimeout(() => {
+      const timer = setTimeout(() => {
       const shouldAnswerCorrectly = Math.random() * 100 < autoAnswerSettings.accuracy;
       const answer = shouldAnswerCorrectly ? currentQ.correctAnswer : currentQ.correctAnswer + (Math.random() > 0.5 ? 1 : -1);
       
@@ -748,12 +754,12 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       setAutoAnsweredCount(prev => prev + 1);
       
       // 自动提交答案
-      setTimeout(() => {
+        setTimeout(() => {
         handleSubmit();
       }, 500);
     }, 1000 + Math.random() * 2000); // 1-3秒随机延迟
 
-    return () => clearTimeout(timer);
+      return () => clearTimeout(timer);
   }, [currentQuestion, autoAnswerSettings, isAdmin, questions, autoAnsweredCount, isSubmitting]);
   
   // 计时器（READY/GO 动画期间暂停倒计时）
@@ -823,14 +829,14 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
         
         setIsSubmitting(true);
         
-        const answer = parseInt(userAnswer);
+    const answer = parseInt(userAnswer);
         const isCorrect = answer === questions[currentQuestion].correctAnswer;
         const now = Date.now();
-        
+
         console.log('提交答案调试信息(键盘):', {
-          userAnswer: answer,
+      userAnswer: answer,
           correctAnswer: questions[currentQuestion].correctAnswer,
-          isCorrect,
+      isCorrect,
           currentQuestion,
           totalQuestions: questions.length,
           question: questions[currentQuestion]
@@ -869,8 +875,8 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           isFillBlank: q.isFillBlank,
           blankPosition: q.blankPosition,
         };
-        setQuestionLogs(prev => [...prev, questionLog]);
-        
+    setQuestionLogs(prev => [...prev, questionLog]);
+
         // 保存题目日志到localStorage
         try {
           const updatedLogs = [...questionLogs, questionLog];
@@ -925,7 +931,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             setPauseStartTime(null);
             // 重置提交状态
             setIsSubmitting(false);
-          } else {
+    } else {
             // 保存最终统计结果与历史记录
             localStorage.setItem('math-practice-score', (score + 1).toString());
             console.log('保存最终统计(回车):', { correct: nextCorrect, wrong: wrongCount, answered: nextAnswered });
@@ -1008,7 +1014,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           localStorage.setItem('math-practice-wrong', nextWrong.toString());
           
           // 答错直接跳下一题，不给修改机会
-          setUserAnswer('');
+      setUserAnswer('');
           setIsWrong(false);
           
           if (currentQuestion < questions.length - 1) {
@@ -1521,7 +1527,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       }, 1500);
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col">
       {/* 顶部信息栏 */}
@@ -1537,13 +1543,13 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             <div className="text-lg font-semibold text-gray-800 dark:text-gray-200">
               {questionType}
             </div>
-          </div>
-          
-                  <div className="text-center">
+      </div>
+
+        <div className="text-center">
                     <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">
                       {isPaused ? '⏸️ 暂停' : `${timeLeft}秒`}
                     </div>
-                  </div>
+          </div>
           
           <div className="flex items-center space-x-3">
             <button
@@ -1601,9 +1607,9 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               <div>自动答题: {autoAnswerSettings.enabled ? '开启' : '关闭'}</div>
               {autoAnswerSettings.enabled && (
                 <div>已自动答题: {autoAnsweredCount}/{autoAnswerSettings.autoCount}</div>
-              )}
-            </div>
-            
+            )}
+          </div>
+
             {/* 自动答题控制 */}
             <div className="mt-3 pt-2 border-t border-gray-600">
               <div className="mb-2">
@@ -1616,7 +1622,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                   />
                   <span>启用自动答题</span>
                 </label>
-              </div>
+            </div>
               
               {autoAnswerSettings.enabled && (
                 <div className="space-y-2">
@@ -1624,15 +1630,15 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                     <label className="block text-xs text-gray-300 mb-1">
                       正确率: {autoAnswerSettings.accuracy}%
                     </label>
-                    <input
+            <input
                       type="range"
                       min="0"
                       max="100"
                       value={autoAnswerSettings.accuracy}
                       onChange={(e) => setAutoAnswerSettings(prev => ({ ...prev, accuracy: parseInt(e.target.value) }))}
                       className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
-                    />
-                  </div>
+            />
+          </div>
                   
                   <div>
                     <label className="block text-xs text-gray-300 mb-1">
@@ -1646,27 +1652,27 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                       onChange={(e) => setAutoAnswerSettings(prev => ({ ...prev, autoCount: parseInt(e.target.value) }))}
                       className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
                     />
-                  </div>
+        </div>
                 </div>
               )}
-            </div>
-            
+      </div>
+
             <div className="mt-2 pt-2 border-t border-gray-600">
               <div className="flex space-x-2 mb-2">
-                <button 
+        <button
                   onClick={() => playSfx('correct')}
                   className="text-xs bg-green-600 px-2 py-1 rounded"
-                >
+        >
                   测试答对音效
-                </button>
-                <button 
+        </button>
+        <button
                   onClick={() => playSfx('wrong')}
                   className="text-xs bg-red-600 px-2 py-1 rounded"
-                >
+        >
                   测试答错音效
-                </button>
-              </div>
-            </div>
+        </button>
+      </div>
+    </div>
           </div>
         )}
 

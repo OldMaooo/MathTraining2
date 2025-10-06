@@ -442,7 +442,9 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                         <span className="relative group">
                           <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-gray-400 text-[10px] text-gray-600">i</span>
                           <span className="absolute left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap bg-black text-white text-[10px] rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            连胜从周一开始；第一天+2，每天+1，封顶+7。
+                            获得连胜：当天完成至少一轮练习；连续天数不中断递增。
+                            周期：从周一开始到周日结束；断开后次日从+2重新开始；每日加成封顶+7。
+                            今日获取连胜条件：今天完成一轮练习即可记为今日连胜。
                           </span>
                         </span>
                       </span>
@@ -530,7 +532,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
               {/* 用户菜单 */}
               {showUserMenu && (
                 <div 
-                  className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+                  className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50"
                   onMouseEnter={() => cancelHideTooltip('user')}
                   onMouseLeave={() => hideTooltip('user')}
                 >
@@ -601,6 +603,32 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                       }}
                     >
                       错题管理
+                    </button>
+                    {/* 随机奖励 */}
+                    <button
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => {
+                        try {
+                          const g = GamificationService.getInstance();
+                          const data = g.getRandomBonusData();
+                          if (data.used >= data.maxPerDay) {
+                            alert(`今日随机奖励已用完 (${data.used}/${data.maxPerDay})`);
+                            return;
+                          }
+                          // 掷骰奖励：1~3 EXP
+                          const bonus = Math.floor(Math.random() * 3) + 1;
+                          g.addExp(bonus);
+                          g.updateRandomBonusData(1);
+                          g.updateDailyTasks('random_bonus', 1);
+                          alert(`获得随机奖励 +${bonus} EXP`);
+                        } catch (e) {
+                          console.error('随机奖励失败', e);
+                        } finally {
+                          setShowUserMenu(false);
+                        }
+                      }}
+                    >
+                      随机奖励
                     </button>
                     
                     {/* 深色模式切换 */}
