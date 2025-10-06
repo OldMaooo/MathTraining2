@@ -210,41 +210,40 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
     percentage: nextLevelExp > currentLevelExp ? Math.min(100, Math.max(0, ((profile.exp - currentLevelExp) / (nextLevelExp - currentLevelExp)) * 100)) : 100
   };
 
-  // 生成周历数据
+  // 生成周历数据（周一开始），并计算今日可得分
   const generateWeekCalendar = () => {
     const today = new Date();
-    const week = [];
+    const week: Array<{date:string; dayName:string; isToday:boolean; hasStreak:boolean; isTodayStreak:boolean; expValue:number; potentialToday:number}> = [];
     const todayStr = today.toISOString().split('T')[0];
-    
-    // 计算连胜经验值
-    const getStreakExp = (daysAgo: number) => {
-      if (daysAgo === 0) return 0; // 今天还没完成
-      // 从最远的天数开始：第一天+2，第二天+3，第三天+4...
-      return Math.min(2 + (profile.streak - daysAgo), 7);
-    };
-    
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
+    // 本周周一
+    const day = today.getDay(); // 0=周日
+    const diffToMonday = (day + 6) % 7; // 周一=0
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - diffToMonday);
+
+    const potentialToday = Math.min(2 + Math.max(0, profile.streak), 7);
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
       const dateStr = date.toISOString().split('T')[0];
-      const dayName = ['日', '一', '二', '三', '四', '五', '六'][date.getDay()];
-      const daysAgo = i; // 0=今天，1=昨天，2=前天...
-      
-      // 连胜状态判断
-      // 如果用户有连胜，那么从今天往前数，连续的天数应该有连胜
-      const hasStreak = daysAgo > 0 && daysAgo <= profile.streak;
-      const isTodayStreak = daysAgo === 0 && profile.streak > 0;
-      
+      const isToday = dateStr === todayStr;
+      const dayName = ['一', '二', '三', '四', '五', '六', '日'][i];
+      const daysAgo = Math.floor((today.getTime() - date.getTime()) / (24 * 3600 * 1000));
+      const isTodayStreak = isToday && profile.streak > 0;
+      const hasStreak = !isToday && daysAgo > 0 && daysAgo <= profile.streak;
+      const historyExp = hasStreak ? Math.min(2 + (profile.streak - daysAgo), 7) : 0;
+
       week.push({
         date: dateStr,
         dayName,
-        isToday: dateStr === todayStr,
+        isToday,
         hasStreak,
         isTodayStreak,
-        expValue: hasStreak ? getStreakExp(daysAgo) : 0
+        expValue: historyExp,
+        potentialToday: isToday ? potentialToday : 0
       });
     }
-    
     return week;
   };
 
@@ -379,6 +378,11 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 {profile.exp}
               </span>
+              {/* 等级环形进度条 */}
+              <svg width="18" height="18" viewBox="0 0 40 40" className="text-blue-500">
+                <circle cx="20" cy="20" r="18" stroke="currentColor" strokeWidth="4" fill="none" className="opacity-20" />
+                <circle cx="20" cy="20" r="18" stroke="currentColor" strokeWidth="4" fill="none" strokeLinecap="round" strokeDasharray={`${(expProgress.percentage/100)*113.097} 113.097`} transform="rotate(-90 20 20)" />
+              </svg>
               
               {/* 经验值提示框 */}
               {showExpTooltip && (
@@ -433,6 +437,15 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                     <div className="text-left">
                     <div className="text-lg font-bold text-gray-900 dark:text-white">
                       {profile.streak}日连胜
+                      {/* 规则提示 i 圈 */}
+                      <span className="inline-flex items-center justify-center ml-2 align-middle">
+                        <span className="relative group">
+                          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-gray-400 text-[10px] text-gray-600">i</span>
+                          <span className="absolute left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap bg-black text-white text-[10px] rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            连胜从周一开始；第一天+2，每天+1，封顶+7。
+                          </span>
+                        </span>
+                      </span>
                     </div>
                     <div className="flex justify-center space-x-1 mt-3">
                       {weekCalendar.map((day, index) => (
@@ -448,10 +461,12 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                           }`}>
                             {day.isTodayStreak || day.hasStreak ? '✓' : day.dayName}
                           </div>
-                          {day.expValue > 0 && (
-                            <div className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">
-                              +{day.expValue}
-                            </div>
+                          {day.isToday && !day.isTodayStreak ? (
+                            <div className="text-sm text-gray-400 font-medium mt-1">+{day.potentialToday}</div>
+                          ) : (
+                            day.expValue > 0 && (
+                              <div className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">+{day.expValue}</div>
+                            )
                           )}
                         </div>
                       ))}
@@ -473,13 +488,12 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                           <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                             今日统计
                           </div>
-                          <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
                             <div>答题数: <span className="font-medium text-gray-900 dark:text-white">{dailyStats.questionsAnswered}</span></div>
-                            <div>答对数: <span className="font-medium text-gray-900 dark:text-white">{dailyStats.correctAnswers}</span></div>
-                            <div>正确率: <span className="font-medium text-gray-900 dark:text-white">{accuracy}%</span></div>
                             <div>平均用时: <span className="font-medium text-gray-900 dark:text-white">{avgTime}秒</span></div>
+                            <div>答对数: <span className="font-medium text-gray-900 dark:text-white">{dailyStats.correctAnswers}</span></div>
                             <div>答题总时长: <span className="font-medium text-gray-900 dark:text-white">{totalTimeSec}秒</span></div>
-                            <div className="text-gray-400">i</div>
+                            <div>正确率: <span className="font-medium text-gray-900 dark:text-white">{accuracy}%</span></div>
                           </div>
                         </div>
                       );
