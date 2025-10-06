@@ -72,6 +72,16 @@ export const Start: React.FC<StartProps> = ({ onStart }) => {
 
   const handleConfigChange = (key: string, value: string | number) => {
     setConfig(prev => ({ ...prev, [key]: value }));
+    // 同步影子状态与输入框显示，保持点击后高亮与数值一致
+    if (key === 'questionCount') {
+      setShadowQuestionCount(String(value));
+    } else if (key === 'timeLimit') {
+      setShadowTimeLimit(String(value));
+    } else if (key === 'range') {
+      setShadowRange(String(value));
+    } else if (key === 'questionType') {
+      // 题型无需同步影子数值
+    }
   };
 
   // 处理输入框失去焦点，防止清空所有数字

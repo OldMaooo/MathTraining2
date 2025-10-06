@@ -46,6 +46,9 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
       refresh();
       const onUpdated = () => refresh();
       window.addEventListener('mp-profile-updated', onUpdated as any);
+      // 账号切换时强制刷新个人档案与今日统计
+      const onAccountChanged = () => refresh();
+      window.addEventListener('mp-account-changed', onAccountChanged as any);
       return () => window.removeEventListener('mp-profile-updated', onUpdated as any);
     } catch (error) {
       console.error('Error in profile useEffect:', error);

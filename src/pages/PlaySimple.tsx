@@ -237,6 +237,18 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       gamification.updateDailyTasks('daily_login', 1);
       gamification.updateDailyTasks('study_time', Math.round(totalTimeSec / 60));
       gamification.updateDailyTasks('correct_answers', finalCorrect);
+      // 写入每日统计（账号隔离）
+      try {
+        const stats = gamification.getDailyStats();
+        const updated = {
+          ...stats,
+          questionsAnswered: (stats.questionsAnswered || 0) + finalTotal,
+          correctAnswers: (stats.correctAnswers || 0) + finalCorrect,
+          totalTime: (stats.totalTime || 0) + totalTimeSec * 1000,
+          expGained: (stats.expGained || 0) + (expGain.total || 0)
+        };
+        gamification.saveDailyStats(updated);
+      } catch {}
       // 写入本次结算结果，供结果页兜底展示提示
       try {
         localStorage.setItem('mp-last-exp', String(expGain.total));
