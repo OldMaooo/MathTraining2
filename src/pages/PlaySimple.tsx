@@ -190,13 +190,37 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     data: any;
   }>>([]);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [autoAnswerSettings, setAutoAnswerSettings] = useState({
-    enabled: false,
-    accuracy: 80, // 正确率百分比
-    autoCount: 5, // 自动做题数量
+  const [isAdminTyping, setIsAdminTyping] = useState(false);
+  const [burstInProgress, setBurstInProgress] = useState(false);
+  const [burstTarget, setBurstTarget] = useState(0);
+  const [burstCompleted, setBurstCompleted] = useState(0);
+  const [autoAnswerSettings, setAutoAnswerSettings] = useState(() => {
+    try {
+      const raw = localStorage.getItem('mp-admin-auto');
+      if (raw) {
+        const obj = JSON.parse(raw);
+        const acc = Math.min(100, Math.max(0, parseInt(String(obj.accuracy ?? 80)) || 80));
+        const cnt = Math.max(1, parseInt(String(obj.autoCount ?? 5)) || 5);
+        return { enabled: false, accuracy: acc, autoCount: cnt };
+      }
+    } catch {}
+    return { enabled: false, accuracy: 80, autoCount: 5 };
   });
   const autoAnswerTimerRef = useRef<number | null>(null);
+  // 管理条数字输入的影子值，允许用户清空再输入
+  const [shadowAutoCount, setShadowAutoCount] = useState<string>(() => {
+    try {
+      const raw = localStorage.getItem('mp-admin-auto');
+      if (raw) {
+        const obj = JSON.parse(raw);
+        const cnt = Math.max(1, parseInt(String(obj.autoCount ?? 5)) || 5);
+        return String(cnt);
+      }
+    } catch {}
+    return '5';
+  });
   const [autoAnsweredCount, setAutoAnsweredCount] = useState(0);
+  const [randomBonusIndex, setRandomBonusIndex] = useState<number | null>(null);
   const [debugStatus, setDebugStatus] = useState('空闲');
   const [isSubmittingHistory, setIsSubmittingHistory] = useState<Array<{timestamp: string, status: string}>>([]);
 
@@ -227,6 +251,55 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
   // 游戏化与提示
   const gamification = GamificationService.getInstance();
   const toast = ToastManager.getInstance();
+
+  // 引用型状态，防竞态读取
+  const currentQuestionRef = useRef(0);
+  useEffect(() => { currentQuestionRef.current = currentQuestion; }, [currentQuestion]);
+  const isSubmittingRef = useRef(false);
+  useEffect(() => { isSubmittingRef.current = isSubmitting; }, [isSubmitting]);
+  const answeredQuestionsRef = useRef(0);
+  useEffect(() => { answeredQuestionsRef.current = answeredQuestions; }, [answeredQuestions]);
+  const burstStartAnsweredRef = useRef(0);
+  const burstStartQuestionRef = useRef(0);
+
+  // 统一的设置持久化/读取工具，避免 NaN 导致的 0%
+  const clampInt = (n: any, min: number, max: number, fallback: number) => {
+    const v = typeof n === 'number' ? n : parseInt(String(n || ''));
+    if (!Number.isFinite(v)) return fallback;
+    return Math.min(max, Math.max(min, v));
+  };
+  const persistAutoSettings = (next?: Partial<{ accuracy: number; autoCount: number }>) => {
+    try {
+      const savedRaw = localStorage.getItem('mp-admin-auto');
+      const saved = savedRaw ? JSON.parse(savedRaw) : {};
+      const acc = clampInt(
+        next?.accuracy ?? saved.accuracy ?? autoAnswerSettings.accuracy,
+        0, 100, autoAnswerSettings.accuracy
+      );
+      const count = clampInt(
+        next?.autoCount ?? saved.autoCount ?? autoAnswerSettings.autoCount,
+        1, Math.max(1, questions.length || 9999), autoAnswerSettings.autoCount
+      );
+      const toSave = JSON.stringify({ accuracy: acc, autoCount: count });
+      localStorage.setItem('mp-admin-auto', toSave);
+      // 同步到状态/影子值
+      setAutoAnswerSettings(prev => ({ ...prev, accuracy: acc, autoCount: count }));
+      setShadowAutoCount(String(count));
+    } catch {}
+  };
+
+  // 载入并保存一键设置
+  useEffect(() => {
+    // 首次装载：从本地读取并校验
+    persistAutoSettings();
+  }, []);
+  useEffect(() => {
+    // 设置变更：统一持久化
+    persistAutoSettings({
+      accuracy: autoAnswerSettings.accuracy,
+      autoCount: autoAnswerSettings.autoCount
+    });
+  }, [autoAnswerSettings.accuracy, autoAnswerSettings.autoCount, questions.length]);
 
   const finalizeGamification = (finalCorrect: number, finalTotal: number, times: number[]) => {
     try {
@@ -398,8 +471,8 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     localStorage.setItem('math-practice-wrong', '0');
     localStorage.setItem('math-practice-answered', '0');
     localStorage.setItem('mp-times', JSON.stringify([]));
-    
-    // 生成题目
+
+  // 生成题目
     const newQuestions: PlaySimpleQuestion[] = [];
     
     if (useWrongSet) {
@@ -439,12 +512,12 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     
     if (newQuestions.length === 0) {
       // 使用简化的题目生成逻辑
-      for (let i = 0; i < questionCount; i++) {
-        let question: PlaySimpleQuestion;
+    for (let i = 0; i < questionCount; i++) {
+      let question: PlaySimpleQuestion;
         if (questionType === 'borrow') {
           question = generateBorrowSubtraction(range);
         } else if (questionType === 'carry') {
-          question = generateCarryAddition(range);
+        question = generateCarryAddition(range);
         } else if (questionType === 'multiply') {
           // 九九乘法表范围（2-9）
           const a = Math.floor(Math.random() * 8) + 2; // 2-9
@@ -704,15 +777,31 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
         } else {
           // 默认混合模式（加减）
           if (i % 2 === 0) {
-            question = generateBorrowSubtraction(range);
-          } else {
+        question = generateBorrowSubtraction(range);
+      } else {
             question = generateCarryAddition(range);
-          }
+      }
         }
-        newQuestions.push(question);
+      newQuestions.push(question);
       }
     }
     
+            // 随机奖励：每日可触发2次，且仅在第3~第6轮内、每轮最多一次
+            try {
+              const today = new Date().toISOString().split('T')[0];
+              const roundKey = `mp-round-index_${today}`;
+              const roundIndex = parseInt(localStorage.getItem(roundKey) || '0') + 1; // 从1开始计数
+              localStorage.setItem(roundKey, String(roundIndex));
+              const bonusData = gamification.getRandomBonusData();
+              const canAppear = bonusData.used < bonusData.maxPerDay && roundIndex >= 3 && roundIndex <= 6;
+              if (canAppear && newQuestions.length > 0) {
+                const idx = Math.floor(Math.random() * newQuestions.length);
+                setRandomBonusIndex(idx);
+          } else {
+                setRandomBonusIndex(null);
+              }
+            } catch {}
+
             setQuestions(newQuestions);
             const now = Date.now();
             setLastStartTime(now);
@@ -725,7 +814,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
 
   // 自动答题逻辑（管理员一键做题）
   useEffect(() => {
-    if (!autoAnswerSettings.enabled || !isAdmin || questions.length === 0) return;
+    if (!autoAnswerSettings.enabled || !isAdmin || questions.length === 0 || burstInProgress) return;
     if (autoAnsweredCount >= autoAnswerSettings.autoCount) return;
     if (currentQuestion >= questions.length) return;
     if (isSubmitting) return;
@@ -750,7 +839,160 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
         autoAnswerTimerRef.current = null;
       }
     };
-  }, [currentQuestion, autoAnswerSettings, isAdmin, questions, autoAnsweredCount, isSubmitting]);
+  }, [currentQuestion, autoAnswerSettings, isAdmin, questions, autoAnsweredCount, isSubmitting, burstInProgress]);
+
+  // 一口气做完（顺序做满设定题数或至本轮结束）
+  const startBurstAutoAnswer = async () => {
+    if (!isAdmin || questions.length === 0 || burstInProgress) return;
+    const target = Math.min(questions.length - currentQuestion, Math.max(1, autoAnswerSettings.autoCount));
+    setBurstTarget(target);
+    setBurstCompleted(0);
+    setBurstInProgress(true);
+    // 记录突发开始时的真实统计，用于显示差值，防止视觉漂移
+    burstStartAnsweredRef.current = answeredQuestionsRef.current;
+    burstStartQuestionRef.current = currentQuestionRef.current;
+    for (let i = 0; i < target; i++) {
+      if (currentQuestionRef.current >= questions.length) break;
+      let guard = 0;
+      while (isSubmittingRef.current && guard++ < 50) await new Promise(r => setTimeout(r, 10));
+      const indexBefore = currentQuestionRef.current;
+      const q = questions[indexBefore];
+      if (!q) break;
+      const shouldCorrect = Math.random() * 100 < autoAnswerSettings.accuracy;
+      const answer = shouldCorrect ? q.correctAnswer : q.correctAnswer + (Math.random() > 0.5 ? 1 : -1);
+      setUserAnswer(String(answer));
+      await new Promise(r => setTimeout(r, 10));
+      handleSubmit();
+      // 等待 currentQuestion 变化或到达末尾，避免越界 21/20
+      const start = Date.now();
+      while (Date.now() - start < 1200) {
+        if (currentQuestionRef.current > indexBefore || currentQuestionRef.current >= questions.length) break;
+        await new Promise(r => setTimeout(r, 10));
+      }
+      if (currentQuestionRef.current > indexBefore || currentQuestionRef.current >= questions.length) {
+        setBurstCompleted(prev => prev + 1);
+        setAutoAnsweredCount(prev => prev + 1);
+      } else {
+        // 未推进，结束突发，避免假计数
+        break;
+      }
+      if (currentQuestionRef.current >= questions.length) break;
+    }
+    setBurstInProgress(false);
+  };
+
+  // 批量结算：按准确率一次性完成 N 道题，直接推进题号并写日志
+  const runBatchAutoAnswer = () => {
+    if (!isAdmin || questions.length === 0) return;
+    const remaining = questions.length - currentQuestionRef.current;
+    const target = Math.min(remaining, Math.max(1, autoAnswerSettings.autoCount));
+    if (target <= 0) return;
+
+    const effectiveAccuracy = clampInt(autoAnswerSettings.accuracy, 0, 100, 80);
+    const shouldCorrectCount = Math.round(target * effectiveAccuracy / 100);
+    const shouldWrongCount = target - shouldCorrectCount;
+    const singleQuestionTime = parseInt(localStorage.getItem('timeLimit') || '5');
+
+    const logs: typeof questionLogs = [];
+    let correct = 0;
+    let wrong = 0;
+    const times: number[] = [];
+
+    for (let i = 0; i < target; i++) {
+      const q = questions[currentQuestionRef.current + i];
+      if (!q) break;
+      const isCorrect = i < shouldCorrectCount;
+      correct += isCorrect ? 1 : 0;
+      wrong += isCorrect ? 0 : 1;
+      const timeTaken = Math.max(0.2, Math.min(2, singleQuestionTime * 0.3));
+      times.push(timeTaken);
+      logs.push({
+        a: q.a,
+        b: q.b,
+        operation: q.operation,
+        correctAnswer: q.correctAnswer,
+        userAnswer: isCorrect ? q.correctAnswer : q.correctAnswer + (Math.random() > 0.5 ? 1 : -1),
+        isCorrect,
+        timeTaken,
+        displayText: q.displayText,
+        isFillBlank: q.isFillBlank,
+        blankPosition: q.blankPosition,
+      });
+    }
+
+    // 写入错题集与惩罚
+    if (wrong > 0) {
+      setTimeLeft(prev => Math.max(0, prev - wrong * singleQuestionTime));
+      try {
+        const existingWrong = localStorage.getItem('mp-wrong-questions');
+        const arr = existingWrong ? JSON.parse(existingWrong) : [];
+        logs.forEach((lg, idx) => {
+          if (!lg.isCorrect) {
+            arr.push({
+              id: Date.now().toString() + Math.random().toString(36).slice(2),
+              ...lg,
+              createdAt: Date.now(),
+              questionType: localStorage.getItem('questionType') || 'unknown',
+              isTestMode: localStorage.getItem('isTestMode') === 'true'
+            });
+          }
+        });
+        localStorage.setItem('mp-wrong-questions', JSON.stringify(arr));
+      } catch {}
+    }
+
+    // 写入题目日志与用时
+    setQuestionLogs(prev => {
+      const updated = [...prev, ...logs];
+      try { localStorage.setItem('mp-question-logs', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+    setPerQuestionTimes(prev => {
+      const updated = [...prev, ...times];
+      try { localStorage.setItem('mp-times', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
+    // 更新计数/得分/答案统计
+    setScore(prev => prev + correct);
+    setAnsweredQuestions(prev => {
+      const next = prev + correct + wrong;
+      localStorage.setItem('math-practice-answered', String(next));
+      return next;
+    });
+    setCorrectCount(prev => prev + correct);
+    setWrongCount(prev => prev + wrong);
+    // 同步写入结果页读取的统计键
+    try {
+      const newCorrect = (parseInt(localStorage.getItem('math-practice-correct') || '0') || 0) + correct;
+      const newWrong = (parseInt(localStorage.getItem('math-practice-wrong') || '0') || 0) + wrong;
+      localStorage.setItem('math-practice-correct', String(newCorrect));
+      localStorage.setItem('math-practice-wrong', String(newWrong));
+    } catch {}
+
+    // 更新每日统计并触发连胜计算
+    try {
+      const stats = gamification.getDailyStats();
+      const updated = {
+        ...stats,
+        questionsAnswered: (stats.questionsAnswered || 0) + correct + wrong,
+        correctAnswers: (stats.correctAnswers || 0) + correct,
+        totalTime: (stats.totalTime || 0) + times.reduce((s, t) => s + t * 1000, 0),
+      };
+      gamification.saveDailyStats(updated);
+      gamification.updateStreak();
+      window.dispatchEvent(new Event('mp-profile-updated'));
+    } catch {}
+
+    // 推进题号
+    const nextIndex = Math.min(questions.length, currentQuestionRef.current + target);
+    setCurrentQuestion(nextIndex);
+
+    // 结束判断
+    if (nextIndex >= questions.length) {
+      onFinish();
+    }
+  };
   
   // 计时器（READY/GO 动画期间暂停倒计时）
   useEffect(() => {
@@ -764,13 +1006,17 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           return prev - 1;
         });
       }
-    }, 1000);
+        }, 1000);
     return () => clearInterval(timer);
   }, [onFinish, isPaused, showReadyAnimation, showGoAnimation]);
   
   // 键盘输入处理
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 当在 Admin 控件中输入时，禁止把数字落到答题输入
+      if (isAdminTyping) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.closest && target.closest('#mp-admin-bar'))) return;
       if (e.key === 'p' || e.key === 'P') {
         // P键：暂停/继续
         e.preventDefault();
@@ -835,7 +1081,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
         const durationSec = Math.max(0, currentQuestionTime / 1000);
         
         console.log('键盘提交答案时的计时信息:', {
-          answer,
+      answer,
           isCorrect,
           now,
           sessionStartTime,
@@ -1072,7 +1318,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           }
           
           // 1.5秒后清除反馈
-          setTimeout(() => {
+        setTimeout(() => {
             setShowFeedback(null);
           }, 1500);
         }
@@ -1163,7 +1409,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     const nextTimes = [...perQuestionTimes, durationSec];
     setPerQuestionTimes(nextTimes);
     localStorage.setItem('mp-times', JSON.stringify(nextTimes));
-    
+
     // 记录题目日志
     const q = questions[currentQuestion];
     const questionLog = {
@@ -1517,7 +1763,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     }
   };
 
-  return (
+    return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col">
       {/* 顶部信息栏 */}
       <div className="bg-white dark:bg-gray-800/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm p-4">
@@ -1531,14 +1777,14 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             </button>
             <div className="text-lg font-semibold text-gray-800 dark:text-gray-200">
               {questionType}
-            </div>
+        </div>
       </div>
 
-                  <div className="text-center">
+        <div className="text-center">
                     <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">
                       {(showReadyAnimation || showGoAnimation) ? `${timeLeft}秒` : (isPaused ? '⏸️ 暂停' : `${timeLeft}秒`)}
-                    </div>
-                  </div>
+        </div>
+      </div>
           
           <div className="flex items-center space-x-3">
             <button
@@ -1579,14 +1825,14 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             </button>
             <div className="text-gray-600 dark:text-gray-400 text-lg font-medium">
               {currentQuestion + 1}/{questions.length}
-            </div>
-          </div>
+        </div>
+      </div>
         </div>
       </div>
 
       {/* Admin 内联控制条（倒计时下方通栏） */}
       {isAdmin && (
-        <div className="w-full bg-black/40 dark:bg-black/50 text-white text-xs py-2 px-3 flex items-center gap-3">
+        <div id="mp-admin-bar" className="w-full bg-black/40 dark:bg-black/50 text-white text-xs py-2 px-3 flex items-center gap-3">
           <div className="flex items-center gap-2">
             <span>正确率</span>
             <input
@@ -1594,25 +1840,50 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               min="0"
               max="100"
               value={autoAnswerSettings.accuracy}
-              onChange={(e) => setAutoAnswerSettings(prev => ({ ...prev, accuracy: parseInt(e.target.value) }))}
+              onChange={(e) => {
+                const val = clampInt(e.target.value, 0, 100, autoAnswerSettings.accuracy);
+                setAutoAnswerSettings(prev => ({ ...prev, accuracy: val }));
+                persistAutoSettings({ accuracy: val });
+              }}
+              onFocus={() => setIsAdminTyping(true)}
+              onBlur={() => setIsAdminTyping(false)}
               className="w-40 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
             />
             <span className="w-8 text-right">{autoAnswerSettings.accuracy}%</span>
-          </div>
+      </div>
           <div className="flex items-center gap-2">
             <span>做题数</span>
             <input
               type="number"
               min={1}
               max={questions.length}
-              value={autoAnswerSettings.autoCount}
-              onChange={(e) => setAutoAnswerSettings(prev => ({ ...prev, autoCount: Math.min(questions.length, Math.max(1, parseInt(e.target.value||'1'))) }))}
+              value={shadowAutoCount}
+              onChange={(e) => {
+                setShadowAutoCount(e.target.value);
+                const parsed = clampInt(e.target.value, 1, Math.max(1, questions.length), autoAnswerSettings.autoCount);
+                persistAutoSettings({ autoCount: parsed });
+              }}
+              onFocus={() => setIsAdminTyping(true)}
+              onBlur={() => {
+                setIsAdminTyping(false);
+                setAutoAnswerSettings(prev => ({
+                  ...prev,
+                  autoCount: Math.min(questions.length, Math.max(1, parseInt(shadowAutoCount || '1'))) 
+                }));
+              }}
               className="w-16 px-2 py-1 rounded bg-white/10 border border-white/20 text-white"
             />
             <span className="opacity-70">/ {questions.length}</span>
           </div>
           <button
-            onClick={() => setAutoAnswerSettings(prev => ({ ...prev, enabled: true }))}
+            onClick={() => {
+              // 先将影子做题数落库到真实设置，避免未失焦导致未保存
+              const parsed = clampInt(shadowAutoCount, 1, Math.max(1, questions.length), autoAnswerSettings.autoCount);
+              setAutoAnswerSettings(prev => ({ ...prev, autoCount: parsed }));
+              persistAutoSettings({ autoCount: parsed });
+              // 批量结算，瞬时完成
+              runBatchAutoAnswer();
+            }}
             className="ml-auto px-3 py-1 rounded bg-blue-600 hover:bg-blue-700"
           >一键做题</button>
           <button
@@ -1620,10 +1891,13 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-700"
           >停止</button>
           {autoAnswerSettings.enabled && (
-            <span className="ml-2 opacity-80">已完成 {autoAnsweredCount}/{autoAnswerSettings.autoCount}</span>
-          )}
-        </div>
+            <span className="ml-2 opacity-80">
+              已完成 {(answeredQuestionsRef.current - burstStartAnsweredRef.current)}/{burstTarget || autoAnswerSettings.autoCount}
+              </span>
+            )}
+          </div>
       )}
+      {/* 调试条已移除 */}
 
       {/* 主要内容区域 */}
       <div className="flex-1 flex flex-col items-center justify-center p-1 sm:p-8">
@@ -1639,7 +1913,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               </div>
             </div>
           )}
-          
+
           {/* 题目内容 - 在动画期间隐藏 */}
           {!(showReadyAnimation || showGoAnimation) && (
             <div className={`font-bold text-gray-800 dark:text-gray-200 mb-4 transition-all duration-300 whitespace-nowrap text-center ${
@@ -1667,7 +1941,9 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                 // 普通题目：显示题目和用户输入
                 return (
                   <>
-                    {question?.displayText}
+                    <span className={`${currentQuestion === randomBonusIndex ? 'bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500' : ''}`}>
+                      {question?.displayText}
+                    </span>
                     <span className={`font-bold ml-2 transition-colors duration-300 align-baseline ${
                       isWrong ? 'text-red-500' : 'text-blue-600'
                     }`} style={{ fontSize: 'clamp(3rem, 8vw, 5rem)' }}>
@@ -1677,7 +1953,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                 );
               }
             })()}
-            </div>
+          </div>
           )}
           
           {/* 小反馈信息 - 固定在题目上方 */}
@@ -1688,7 +1964,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           )}
         </div>
       </div>
-      
+
       {/* 数字键盘 - 移动端置底，桌面端居中 */}
       <div className="w-full sm:max-w-sm sm:mx-auto sm:px-0 sm:mt-8">
         <div className="grid grid-cols-4 grid-rows-4 gap-0.5 sm:gap-3">
@@ -1705,7 +1981,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           {/* 提交按钮占两行 */}
           <button className={`text-sm sm:text-lg font-bold rounded-lg ${colors.status.successBg} ${colors.status.success} hover:bg-green-600 dark:hover:bg-green-700 transition shadow disabled:bg-gray-400 disabled:cursor-not-allowed col-start-4 row-start-2 row-span-2`} onClick={handleSubmit} disabled={userAnswer === '' || userAnswer === null || userAnswer === undefined || isSubmitting}>
             {isSubmitting ? '提交中...' : '提交'}
-          </button>
+        </button>
 
           {/* 第三行 */}
           <button className="aspect-square text-4xl sm:text-[2.5em] font-bold rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-50 hover:text-blue-600 transition shadow col-start-1 row-start-3" onClick={() => handleNumberInput('7')}>7</button>

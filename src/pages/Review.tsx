@@ -156,6 +156,7 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
   const [improvePercent, setImprovePercent] = useState<number>(0);
   const [totalTime, setTotalTime] = useState<number>(0);
   const [expDetail, setExpDetail] = useState<{ accuracy: number; totalTimeSec: number; correct: number; total: number; expGain: any } | null>(null);
+  // 结果页调试临时移除
   const [showQuestionAnalysis, setShowQuestionAnalysis] = useState(false);
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [levelUpAnimation, setLevelUpAnimation] = useState(false);
@@ -426,6 +427,7 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
         console.error("Error processing history:", e);
       }
     }
+    // 调试读取移除
   }, []);
 
   // 结果页兜底：如果有上一轮结算结果，进入时再弹一次提示
@@ -591,6 +593,7 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
               </div>
             </div>
           </div>
+          {/* 调试块移除 */}
         </div>
 
         {/* 右卡：答题速度 + 本轮总用时 */}

@@ -697,29 +697,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                     }`}>
                       +{task.expReward} EXP
                     </div>
-                    {task.id === 'random_bonus' && !task.completed && (
-                      <button
-                        className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
-                        onClick={() => {
-                          try {
-                            const g = GamificationService.getInstance();
-                            const data = g.getRandomBonusData();
-                            if (data.used >= data.maxPerDay) {
-                              alert(`今日随机奖励已用完 (${data.used}/${data.maxPerDay})`);
-                              return;
-                            }
-                            // 按每日上限允许领取一次（任务target为1）
-                            const bonus = Math.floor(Math.random() * 3) + 1; // 1~3
-                            g.addExp(bonus);
-                            g.updateRandomBonusData(1);
-                            g.updateDailyTasks('random_bonus', 1);
-                            alert(`获得随机奖励 +${bonus} EXP`);
-                          } catch (e) {
-                            console.error('随机奖励失败', e);
-                          }
-                        }}
-                      >领取</button>
-                    )}
+                    {/* 随机奖励不再手动领取：展示状态由做题流程触发 */}
                   </div>
                 </div>
               ))}
