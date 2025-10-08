@@ -42,8 +42,74 @@
 - 旧账户无 type 时：启动时补为 parent；名称为 `mao1986` 的补为 admin。
 - 子账号仅在新建时带 parentId，老数据不改动。
 
-## 附：保留自 SPEC-1004 的章节
-- 等级曲线、经验规则、音效系统、调试面板、历史记录与输入框修复等内容保持一致；详见 `SPEC-1004.md`。
+## 经验/等级 详细规范（原 SPEC-1004 合并）
+
+### 等级体系
+- 25个等级，从 L1 到 L25；名称与经验要求如下：
+
+```text
+L1 青铜菜鸡(0), L2 白银菜鸡(30), L3 黄金菜鸡(70), L4 钻石菜鸡(120), L5 黑曜石菜鸡(180),
+L6 青铜战神(250), L7 白银战神(330), L8 黄金战神(420), L9 钻石战神(520), L10 黑曜石战神(630),
+L11 青铜卷王(750), L12 白银卷王(880), L13 黄金卷王(1020), L14 钻石卷王(1170), L15 黑曜石卷王(1330),
+L16 青铜屠夫(1500), L17 白银屠夫(1680), L18 黄金屠夫(1870), L19 钻石屠夫(2070), L20 黑曜石屠夫(2280),
+L21 青铜天尊(2500), L22 白银天尊(2730), L23 黄金天尊(2970), L24 钻石天尊(3220), L25 黑曜石天尊(3480)
+```
+
+对应实现（src/types/gamification.ts）：
+
+```startLine:endLine:/Users/mao/Documents/Coding/Development/Projects/Web/加减法练习/src/types/gamification.ts
+64:91:const expRequirements = [
+  0,    30,   70,   120,  180,
+  250,  330,  420,  520,  630,
+  750,  880,  1020, 1170, 1330,
+  1500, 1680, 1870, 2070, 2280,
+  2500, 2730, 2970, 3220, 3480
+];
+```
+
+### 经验获取规则
+- 准确率：≥90/+5，≥80/+3，≥60/+1
+- 学习时长（分钟）：≥10/+3，≥5/+1
+- 题量：≥20/+2，≥10/+1
+
+对应实现（EXP_RULES 与 calculateExpGain）：
+
+```startLine:endLine:/Users/mao/Documents/Coding/Development/Projects/Web/加减法练习/src/types/gamification.ts
+107:116:export const EXP_RULES = {
+  HIGH_ACCURACY: 5,
+  MEDIUM_ACCURACY: 3,
+  LOW_ACCURACY: 1,
+  LONG_STUDY: 3,
+  MEDIUM_STUDY: 1,
+  MANY_QUESTIONS: 2,
+  SOME_QUESTIONS: 1,
+} as const;
+```
+
+```startLine:endLine:/Users/mao/Documents/Coding/Development/Projects/Web/加减法练习/src/services/gamificationService.ts
+99:136:  calculateExpGain(accuracy: number, totalTime: number, correctCount: number): ExpGain {
+    let total = 0;
+    const details: { [key: string]: number } = {};
+    // 正确率奖励 ...（同文档规则）
+    return { total, details };
+  }
+```
+
+### 经验进度展示
+- 结算页：线性进度条，h-3，2s 动画，dark 适配。
+- 头部：🎓右侧环形进度（SVG 双圆，前景dash控制，-90°旋转）。
+
+## 音效系统（原 SPEC-1004 合并）
+- 目录：public/sfx/（correct.wav, wrong.wav, start.wav, success.mp3）。
+- 播放：异步 `audio.play()`，错误容忍；入口：答对/答错/开始/结算。
+
+## 调试面板（原 SPEC-1004 合并）
+- 右上角悬浮，黑底半透；显示状态、题目进度、答案、提交状态、音效测试按钮。
+- Admin 独享；支持一键做题开关与两个滑杆（正确率/数量）。
+
+## 历史记录与输入框修复（原 SPEC-1004 合并）
+- 历史：每轮完成写入 `mp-history`，包含题目日志、统计、时间、准确率等。
+- 输入框：影子状态 + onBlur 同步，避免清空值导致抖动；高度 36px（首页三项统一）。
 
 ## 实现状态（截至最新提交）
 - [x] 25级等级体系与经验进度（结算页与头部环形进度）
