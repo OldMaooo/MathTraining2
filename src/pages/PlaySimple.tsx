@@ -298,23 +298,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // 管理员模式检测
-  useEffect(() => {
-    const checkAdmin = () => {
-      const adminKey = localStorage.getItem('mp-admin-mode');
-      setIsAdmin(adminKey === 'true');
-    };
-    checkAdmin();
-    
-    // 监听存储变化
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'mp-admin-mode') {
-        checkAdmin();
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  // 取消旧的 localStorage 开关依赖，统一以当前账号类型判定 admin（见上方 useEffect）
 
   // 更新调试状态
   useEffect(() => {
