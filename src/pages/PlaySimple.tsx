@@ -1583,93 +1583,47 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           </div>
         </div>
       </div>
-      
-        {/* 管理员调试面板 */}
-        {isAdmin && (
-          <div className="fixed top-4 right-4 bg-black/80 text-white p-3 rounded-lg text-xs max-w-sm z-50">
-            <div className="font-bold mb-2">🔧 调试面板</div>
-            <div className="space-y-1">
-              <div>状态: {debugStatus}</div>
-              <div>题目: {currentQuestion + 1}/{questions.length}</div>
-              <div>答案: {userAnswer || '未输入'}</div>
-              <div>提交中: {isSubmitting ? '是' : '否'}</div>
-              <div>自动答题: {autoAnswerSettings.enabled ? '开启' : '关闭'}</div>
-              {autoAnswerSettings.enabled && (
-                <div>已自动答题: {autoAnsweredCount}/{autoAnswerSettings.autoCount}</div>
-            )}
-          </div>
 
-            {/* 自动答题控制 */}
-            <div className="mt-3 pt-2 border-t border-gray-600">
-            <div className="mb-2">
-              <button
-                onClick={() => setAutoAnswerSettings(prev => ({ ...prev, enabled: !prev.enabled }))}
-                className="text-xs px-2 py-1 rounded bg-blue-600 hover:bg-blue-700"
-              >{autoAnswerSettings.enabled ? '停止一键做题' : '开始一键做题'}</button>
-            </div>
-              <div className="mb-2">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={autoAnswerSettings.enabled}
-                    onChange={(e) => setAutoAnswerSettings(prev => ({ ...prev, enabled: e.target.checked }))}
-                    className="rounded"
-                  />
-                  <span>启用自动答题</span>
-                </label>
-            </div>
-              
-              {autoAnswerSettings.enabled && (
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-xs text-gray-300 mb-1">
-                      正确率: {autoAnswerSettings.accuracy}%
-                    </label>
+      {/* Admin 内联控制条（倒计时下方通栏） */}
+      {isAdmin && (
+        <div className="w-full bg-black/40 dark:bg-black/50 text-white text-xs py-2 px-3 flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span>正确率</span>
             <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={autoAnswerSettings.accuracy}
-                      onChange={(e) => setAutoAnswerSettings(prev => ({ ...prev, accuracy: parseInt(e.target.value) }))}
-                      className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+              type="range"
+              min="0"
+              max="100"
+              value={autoAnswerSettings.accuracy}
+              onChange={(e) => setAutoAnswerSettings(prev => ({ ...prev, accuracy: parseInt(e.target.value) }))}
+              className="w-40 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
             />
+            <span className="w-8 text-right">{autoAnswerSettings.accuracy}%</span>
           </div>
-                  
-                  <div>
-                    <label className="block text-xs text-gray-300 mb-1">
-                      自动答题数: {autoAnswerSettings.autoCount}
-                    </label>
-                    <input
-                      type="range"
-                      min="1"
-                      max={Math.min(10, questions.length)}
-                      value={autoAnswerSettings.autoCount}
-                      onChange={(e) => setAutoAnswerSettings(prev => ({ ...prev, autoCount: parseInt(e.target.value) }))}
-                      className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
-                    />
+          <div className="flex items-center gap-2">
+            <span>做题数</span>
+            <input
+              type="number"
+              min={1}
+              max={questions.length}
+              value={autoAnswerSettings.autoCount}
+              onChange={(e) => setAutoAnswerSettings(prev => ({ ...prev, autoCount: Math.min(questions.length, Math.max(1, parseInt(e.target.value||'1'))) }))}
+              className="w-16 px-2 py-1 rounded bg-white/10 border border-white/20 text-white"
+            />
+            <span className="opacity-70">/ {questions.length}</span>
+          </div>
+          <button
+            onClick={() => setAutoAnswerSettings(prev => ({ ...prev, enabled: true }))}
+            className="ml-auto px-3 py-1 rounded bg-blue-600 hover:bg-blue-700"
+          >一键做题</button>
+          <button
+            onClick={() => setAutoAnswerSettings(prev => ({ ...prev, enabled: false }))}
+            className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-700"
+          >停止</button>
+          {autoAnswerSettings.enabled && (
+            <span className="ml-2 opacity-80">已完成 {autoAnsweredCount}/{autoAnswerSettings.autoCount}</span>
+          )}
         </div>
-                </div>
-              )}
-      </div>
-
-            <div className="mt-2 pt-2 border-t border-gray-600">
-              <div className="flex space-x-2 mb-2">
-        <button
-                  onClick={() => playSfx('correct')}
-                  className="text-xs bg-green-600 px-2 py-1 rounded"
-        >
-                  测试答对音效
-        </button>
-        <button
-                  onClick={() => playSfx('wrong')}
-                  className="text-xs bg-red-600 px-2 py-1 rounded"
-        >
-                  测试答错音效
-        </button>
-      </div>
-    </div>
-          </div>
-        )}
+      )}
 
       {/* 主要内容区域 */}
       <div className="flex-1 flex flex-col items-center justify-center p-1 sm:p-8">
