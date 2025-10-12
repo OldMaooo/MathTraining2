@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { GamificationService } from '../services/gamificationService';
 import { AccountService } from '../services/accountService';
+import { CloudStore } from '../services/cloudStore';
 import { ToastManager } from '../components/Toast';
 import { colors } from '../styles/colors';
 
@@ -1119,6 +1120,35 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
         } catch (error) {
           console.error('保存题目日志失败:', error as Error);
         }
+
+        // 云端同步题目日志
+        try {
+          if (localStorage.getItem('mp-cloud-sync') === '1') {
+            const accountService = AccountService.getInstance();
+            const currentAccount = accountService.getCurrentAccount();
+            if (currentAccount) {
+              const passwordHash = btoa(currentAccount.name + '_password');
+              CloudStore.getInstance().ensureAccount(currentAccount.name, passwordHash, currentAccount.type)
+                .then(cloudAccountId => {
+                  return CloudStore.getInstance().logQuestion(cloudAccountId, {
+                    questionText: q.displayText,
+                    userAnswer: answer,
+                    correctAnswer: q.correctAnswer,
+                    isCorrect,
+                    timeTaken: durationSec
+                  });
+                })
+                .then(() => {
+                  console.log('[CloudSync] 题目日志同步成功');
+                })
+                .catch(error => {
+                  console.error('[CloudSync] 题目日志同步失败:', error);
+                });
+            }
+          }
+        } catch (error) {
+          console.error('[CloudSync] 题目日志同步异常:', error);
+        }
         
         // 如果是错题，增加5秒惩罚时间
         if (!isCorrect) {
@@ -1140,6 +1170,33 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             localStorage.setItem('mp-wrong-questions', JSON.stringify(wrongQuestions));
           } catch (error) {
             console.error('保存错题失败:', error as Error);
+          }
+
+          // 云端同步错题记录
+          try {
+            if (localStorage.getItem('mp-cloud-sync') === '1') {
+              const accountService = AccountService.getInstance();
+              const currentAccount = accountService.getCurrentAccount();
+              if (currentAccount) {
+                const passwordHash = btoa(currentAccount.name + '_password');
+                CloudStore.getInstance().ensureAccount(currentAccount.name, passwordHash, currentAccount.type)
+                  .then(cloudAccountId => {
+                    return CloudStore.getInstance().logWrongQuestion(cloudAccountId, {
+                      questionText: q.displayText,
+                      correctAnswer: q.correctAnswer,
+                      wrongAnswer: answer
+                    });
+                  })
+                  .then(() => {
+                    console.log('[CloudSync] 错题记录同步成功');
+                  })
+                  .catch(error => {
+                    console.error('[CloudSync] 错题记录同步失败:', error);
+                  });
+              }
+            }
+          } catch (error) {
+            console.error('[CloudSync] 错题记录同步异常:', error);
           }
         }
         

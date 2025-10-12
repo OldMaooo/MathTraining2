@@ -1,6 +1,7 @@
 import type { UserProfile, DailyTasks, DailyStats, RandomBonusData, ExpGain, TaskInfo } from '../types/gamification';
 import { STORAGE_KEYS, LEVELS, EXP_RULES } from '../types/gamification';
 import { AccountService } from './accountService';
+import { CloudStore } from './cloudStore';
 
 export class GamificationService {
   private static instance: GamificationService;
@@ -63,6 +64,37 @@ export class GamificationService {
       console.log('[Gamification] saveUserProfile', profile);
       window.dispatchEvent(new CustomEvent('mp-profile-updated'));
     } catch {}
+
+    // 可选云端同步（通过 localStorage 开关控制，不影响现有逻辑）
+    try {
+      if (localStorage.getItem('mp-cloud-sync') === '1') {
+        console.log('[CloudSync] 开始同步用户档案到云端...');
+        const accountService = AccountService.getInstance();
+        const currentAccount = accountService.getCurrentAccount();
+        if (currentAccount) {
+          console.log('[CloudSync] 当前账号:', currentAccount);
+          // 先确保账户存在
+          const passwordHash = btoa(currentAccount.name + '_password');
+          CloudStore.getInstance().ensureAccount(currentAccount.name, passwordHash, currentAccount.type)
+            .then(cloudAccountId => {
+              console.log('[CloudSync] 账户ID:', cloudAccountId);
+              return CloudStore.getInstance().upsertProfile(cloudAccountId, profile);
+            })
+            .then(() => {
+              console.log('[CloudSync] 用户档案同步成功');
+            })
+            .catch(error => {
+              console.error('[CloudSync] 用户档案同步失败:', error);
+            });
+        } else {
+          console.log('[CloudSync] 未找到当前账号');
+        }
+      } else {
+        console.log('[CloudSync] 云同步未开启');
+      }
+    } catch (error) {
+      console.error('[CloudSync] 云同步异常:', error);
+    }
   }
 
   // 添加经验值
@@ -191,6 +223,21 @@ export class GamificationService {
   saveDailyTasks(tasks: DailyTasks): void {
     const storageKey = this.getAccountStorageKey(STORAGE_KEYS.DAILY_TASKS);
     localStorage.setItem(storageKey, JSON.stringify(tasks));
+
+    try {
+      if (localStorage.getItem('mp-cloud-sync') === '1') {
+        const accountService = AccountService.getInstance();
+        const currentAccount = accountService.getCurrentAccount();
+        if (currentAccount) {
+          const passwordHash = btoa(currentAccount.name + '_password');
+          CloudStore.getInstance().ensureAccount(currentAccount.name, passwordHash, currentAccount.type)
+            .then(cloudAccountId => {
+              return CloudStore.getInstance().upsertDailyTasks(cloudAccountId, tasks);
+            })
+            .catch(() => {});
+        }
+      }
+    } catch {}
   }
 
   // 更新每日任务
@@ -284,5 +331,20 @@ export class GamificationService {
   saveDailyStats(stats: DailyStats): void {
     const storageKey = this.getAccountStorageKey(STORAGE_KEYS.DAILY_STATS);
     localStorage.setItem(storageKey, JSON.stringify(stats));
+
+    try {
+      if (localStorage.getItem('mp-cloud-sync') === '1') {
+        const accountService = AccountService.getInstance();
+        const currentAccount = accountService.getCurrentAccount();
+        if (currentAccount) {
+          const passwordHash = btoa(currentAccount.name + '_password');
+          CloudStore.getInstance().ensureAccount(currentAccount.name, passwordHash, currentAccount.type)
+            .then(cloudAccountId => {
+              return CloudStore.getInstance().upsertDailyStats(cloudAccountId, stats);
+            })
+            .catch(() => {});
+        }
+      }
+    } catch {}
   }
 }

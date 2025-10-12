@@ -1,3 +1,5 @@
+import { CloudStore } from './cloudStore';
+
 export interface Account {
   id: string;
   name: string;
@@ -55,6 +57,24 @@ export class AccountService {
     
     accounts.push(newAccount);
     this.saveAccounts(accounts);
+    
+    // 云端同步（如果启用）
+    try {
+      if (localStorage.getItem('mp-cloud-sync') === '1') {
+        // 生成一个简单的密码哈希（实际应用中应该更安全）
+        const passwordHash = btoa(name + '_password');
+        CloudStore.getInstance().ensureAccount(name, passwordHash, accountType)
+          .then(cloudAccountId => {
+            console.log('Account synced to cloud:', cloudAccountId);
+          })
+          .catch(error => {
+            console.error('Failed to sync account to cloud:', error);
+          });
+      }
+    } catch (error) {
+      console.error('Cloud sync error:', error);
+    }
+    
     return newAccount;
   }
 

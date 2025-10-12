@@ -32,3 +32,6 @@ try {
   console.error('Error in main.tsx:', error);
   document.getElementById('root')!.innerHTML = '<h1 style="color: red;">React 加载失败: ' + error.message + '</h1>';
 }
+
+
+
