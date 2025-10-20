@@ -84,7 +84,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
     } catch (error) {
       console.error('Account initialization error:', error);
       // 设置默认值避免崩溃
-      setCurrentAccount({ id: 'default', name: '用户', createdAt: Date.now(), lastActiveAt: Date.now() });
+      setCurrentAccount({ id: 'default', name: '用户', type: 'user', createdAt: Date.now(), lastActiveAt: Date.now() });
       setAccounts([]);
       setRecentAccounts([]);
     }
@@ -288,9 +288,11 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
       completed: tasks.tasks.consecutive_wins.completed
     });
     
+    // 获取随机奖励数据
+    const bonusData = gamificationService.getRandomBonusData();
     taskList.push({
       id: 'random_bonus',
-      name: '随机奖励',
+      name: `随机奖励 (${bonusData.used}/${bonusData.maxPerDay})`,
       expReward: 1,
       completed: tasks.tasks.random_bonus.completed
     });
@@ -454,7 +456,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                       </button>
                     </div>
                     <div className="flex justify-center space-x-1 mt-3">
-                      {weekCalendar.map((day, index) => (
+                      {weekCalendar.map((day) => (
                         <div key={day.date} className="flex flex-col items-center">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
                             day.isTodayStreak
@@ -616,6 +618,24 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                       }}
                     >
                       错题管理
+                    </button>
+                    <button
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => {
+                        onNavigate('learning-path');
+                        setShowUserMenu(false);
+                      }}
+                    >
+                      🏰 学习路径
+                    </button>
+                    <button
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => {
+                        onNavigate('parent-dashboard');
+                        setShowUserMenu(false);
+                      }}
+                    >
+                      📊 家长监控
                     </button>
                     {/* 随机奖励移动到任务中心 */}
                     

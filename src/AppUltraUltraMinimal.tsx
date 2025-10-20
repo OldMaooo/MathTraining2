@@ -1,9 +1,9 @@
 import React from 'react';
 
-function AppMinimal() {
+function AppUltraUltraMinimal() {
   return (
     <div>
-      <h1>计算挑战赛 - 最小版本</h1>
+      <h1>计算挑战赛 - 超超最小版本</h1>
       <p>如果你能看到这个页面，说明 React 应用正常运行。</p>
       <div>
         <h2>学习路径</h2>
@@ -13,4 +13,14 @@ function AppMinimal() {
   );
 }
 
-export default AppMinimal;
+export default AppUltraUltraMinimal;
+
+
+
+
+
+
+
+
+
+

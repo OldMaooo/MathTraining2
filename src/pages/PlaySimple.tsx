@@ -787,19 +787,31 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       }
     }
     
-            // 随机奖励：每日可触发2次，且仅在第3~第6轮内、每轮最多一次
+            // 随机奖励逻辑
             try {
               const today = new Date().toISOString().split('T')[0];
               const roundKey = `mp-round-index_${today}`;
               const roundIndex = parseInt(localStorage.getItem(roundKey) || '0') + 1; // 从1开始计数
               localStorage.setItem(roundKey, String(roundIndex));
               const bonusData = gamification.getRandomBonusData();
-              const canAppear = bonusData.used < bonusData.maxPerDay && roundIndex >= 3 && roundIndex <= 6;
+              
+              // 检查是否为测试模式（每题都显示随机题）
+              const isTestMode = localStorage.getItem('mp-random-bonus-test') === '1';
+              
+              // 常规规则：10题以上才出现随机题，第3~第6轮内，每日最多2次
+              const hasEnoughQuestions = newQuestions.length >= 10;
+              const isInRange = roundIndex >= 3 && roundIndex <= 6;
+              const hasUsesLeft = bonusData.used < bonusData.maxPerDay;
+              
+              const canAppear = isTestMode || (hasEnoughQuestions && isInRange && hasUsesLeft);
+              
               if (canAppear && newQuestions.length > 0) {
                 const idx = Math.floor(Math.random() * newQuestions.length);
                 setRandomBonusIndex(idx);
-          } else {
+                console.log(`随机奖励题设置: 测试模式=${isTestMode}, 题数=${newQuestions.length}, 轮次=${roundIndex}, 已用=${bonusData.used}`);
+              } else {
                 setRandomBonusIndex(null);
+                console.log(`随机奖励题未设置: 测试模式=${isTestMode}, 题数=${newQuestions.length}, 轮次=${roundIndex}, 已用=${bonusData.used}`);
               }
             } catch {}
 
@@ -969,6 +981,26 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       const newWrong = (parseInt(localStorage.getItem('math-practice-wrong') || '0') || 0) + wrong;
       localStorage.setItem('math-practice-correct', String(newCorrect));
       localStorage.setItem('math-practice-wrong', String(newWrong));
+    } catch {}
+
+    // 处理随机奖励题（批量答题中）
+    try {
+      const currentRandomIndex = randomBonusIndex;
+      if (currentRandomIndex !== null) {
+        const randomQuestionIndex = currentRandomIndex - currentQuestionRef.current;
+        if (randomQuestionIndex >= 0 && randomQuestionIndex < logs.length) {
+          const randomLog = logs[randomQuestionIndex];
+          if (randomLog.isCorrect) {
+            console.log('批量答题中随机奖励题答对！');
+            gamification.updateRandomBonusData(1);
+            gamification.updateDailyTasks('random_bonus', 1);
+          } else {
+            console.log('批量答题中随机奖励题答错！');
+          }
+          // 清除随机奖励标记
+          setRandomBonusIndex(null);
+        }
+      }
     } catch {}
 
     // 更新每日统计并触发连胜计算
@@ -1152,6 +1184,13 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
         
         // 如果是错题，增加5秒惩罚时间
         if (!isCorrect) {
+          // 处理随机奖励题答错
+          if (currentQuestion === randomBonusIndex) {
+            console.log('随机奖励题答错！本轮不再出现随机奖励');
+            // 清除当前轮次的随机奖励标记，答错后本轮不再出现
+            setRandomBonusIndex(null);
+          }
+          
           // 错题惩罚：从剩余时间扣除5秒
           setTimeLeft(prev => Math.max(0, prev - 5));
           
@@ -1207,6 +1246,17 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           setScore(prev => prev + 1);
           setAnsweredQuestions(prev => prev + 1);
           setCorrectCount(prev => prev + 1);
+          
+          // 处理随机奖励题答对
+          if (currentQuestion === randomBonusIndex) {
+            console.log('随机奖励题答对！');
+            gamification.updateRandomBonusData(1);
+            // 更新每日任务
+            gamification.updateDailyTasks('random_bonus', 1);
+            // 清除当前轮次的随机奖励标记，避免重复
+            setRandomBonusIndex(null);
+          }
+          
           // 立即持久化
           localStorage.setItem('math-practice-answered', nextAnswered.toString());
           localStorage.setItem('math-practice-correct', nextCorrect.toString());
@@ -1835,6 +1885,18 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             <div className="text-lg font-semibold text-gray-800 dark:text-gray-200">
               {questionType}
         </div>
+            <button
+              onClick={() => {
+                try {
+                  const levelId = localStorage.getItem('mp-current-level-id') || '';
+                  const ev = new CustomEvent('go-level-detail', { detail: { levelId } });
+                  window.dispatchEvent(ev as any);
+                } catch {}
+              }}
+              className="text-sm px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+            >
+              关卡详情
+            </button>
       </div>
 
         <div className="text-center">
@@ -1931,6 +1993,21 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
               className="w-16 px-2 py-1 rounded bg-white/10 border border-white/20 text-white"
             />
             <span className="opacity-70">/ {questions.length}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={localStorage.getItem('mp-random-bonus-test') === '1'}
+                onChange={(e) => {
+                  localStorage.setItem('mp-random-bonus-test', e.target.checked ? '1' : '0');
+                  // 刷新页面以应用设置
+                  window.location.reload();
+                }}
+                className="w-4 h-4"
+              />
+              <span>随机题测试</span>
+            </label>
           </div>
           <button
             onClick={() => {
