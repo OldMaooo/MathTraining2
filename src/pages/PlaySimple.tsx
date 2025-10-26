@@ -46,51 +46,83 @@ interface PlaySimpleProps {
 }
 
 // 退位减法题目生成函数（保证加/减项都在范围内，且必须发生退位）
-const generateBorrowSubtraction = (range: number): PlaySimpleQuestion => {
+const generateBorrowSubtraction = (range: number, usedQuestions: Set<string> = new Set()): PlaySimpleQuestion => {
   let a = 0;
   let b = 0;
-  for (let i = 0; i < 200; i++) {
-    a = Math.max(1, Math.floor(Math.random() * range) + 1);
-    b = Math.max(1, Math.floor(Math.random() * range) + 1);
-    if (a >= b && (a % 10) < (b % 10)) break; // 需要借位
-  }
-  if (!(a >= b && (a % 10) < (b % 10))) {
-    // 兜底：构造一个一定借位的数对
-    const low = Math.min(9, Math.max(1, range - 1));
-    const high = Math.min(range, low + 10);
-    b = Math.max(1, Math.min(range, low));
-    a = Math.max(b, Math.min(range, high));
-    if (!((a % 10) < (b % 10))) {
-      // 强制让个位满足借位条件
-      const aOnes = (a % 10);
-      const targetBOnes = Math.min(9, aOnes + 1);
-      b = Math.max(1, Math.min(range, Math.floor(b / 10) * 10 + targetBOnes));
-      if (b > a) a = b + 1 <= range ? b + 1 : b; // 再兜底
+  let attempts = 0;
+  const maxAttempts = 100;
+  
+  do {
+    for (let i = 0; i < 50; i++) {
+      a = Math.max(1, Math.floor(Math.random() * range) + 1);
+      b = Math.max(1, Math.floor(Math.random() * range) + 1);
+      if (a >= b && (a % 10) < (b % 10)) break; // 需要借位
     }
+    
+    if (!(a >= b && (a % 10) < (b % 10))) {
+      // 兜底：构造一个一定借位的数对
+      const low = Math.min(9, Math.max(1, range - 1));
+      const high = Math.min(range, low + 10);
+      b = Math.max(1, Math.min(range, low));
+      a = Math.max(b, Math.min(range, high));
+      if (!((a % 10) < (b % 10))) {
+        // 强制让个位满足借位条件
+        const aOnes = (a % 10);
+        const targetBOnes = Math.min(9, aOnes + 1);
+        b = Math.max(1, Math.min(range, Math.floor(b / 10) * 10 + targetBOnes));
+        if (b > a) a = b + 1 <= range ? b + 1 : b; // 再兜底
+      }
+    }
+    
+    attempts++;
+  } while (usedQuestions.has(`${a}-${b}`) && attempts < maxAttempts);
+  
+  // 如果还是重复，添加时间戳确保唯一性
+  if (usedQuestions.has(`${a}-${b}`)) {
+    a = a + (Date.now() % 100);
+    b = b + (Date.now() % 100);
   }
+  
+  usedQuestions.add(`${a}-${b}`);
   return { a, b, operation: '-', correctAnswer: a - b, displayText: `${a} - ${b} =` };
 };
 
 // 进位加法题目生成函数（保证加/减项都在范围内，且必须发生进位）
-const generateCarryAddition = (range: number): PlaySimpleQuestion => {
+const generateCarryAddition = (range: number, usedQuestions: Set<string> = new Set()): PlaySimpleQuestion => {
   let a = 0;
   let b = 0;
-  for (let i = 0; i < 200; i++) {
-    a = Math.max(1, Math.floor(Math.random() * range) + 1);
-    b = Math.max(1, Math.floor(Math.random() * range) + 1);
-    if (((a % 10) + (b % 10)) >= 10) break; // 需要进位
-  }
-  if (!(((a % 10) + (b % 10)) >= 10)) {
-    // 兜底：构造一个一定进位的数对
-    const aOnes = Math.min(9, Math.max(0, (Math.floor(Math.random() * 10))));
-    const bOnes = 10 - aOnes;
-    a = Math.max(1, Math.min(range, aOnes + 10 * Math.floor(Math.random() * Math.max(1, Math.floor(range / 10)))));
-    b = Math.max(1, Math.min(range, bOnes + 10 * Math.floor(Math.random() * Math.max(1, Math.floor(range / 10)))));
-    if (((a % 10) + (b % 10)) < 10) {
-      const adjust = 10 - ((a % 10) + (b % 10));
-      b = Math.min(range, b + adjust);
+  let attempts = 0;
+  const maxAttempts = 100;
+  
+  do {
+    for (let i = 0; i < 50; i++) {
+      a = Math.max(1, Math.floor(Math.random() * range) + 1);
+      b = Math.max(1, Math.floor(Math.random() * range) + 1);
+      if (((a % 10) + (b % 10)) >= 10) break; // 需要进位
     }
+    
+    if (!(((a % 10) + (b % 10)) >= 10)) {
+      // 兜底：构造一个一定进位的数对
+      const aOnes = Math.min(9, Math.max(0, (Math.floor(Math.random() * 10))));
+      const bOnes = 10 - aOnes;
+      a = Math.max(1, Math.min(range, aOnes + 10 * Math.floor(Math.random() * Math.max(1, Math.floor(range / 10)))));
+      b = Math.max(1, Math.min(range, bOnes + 10 * Math.floor(Math.random() * Math.max(1, Math.floor(range / 10)))));
+      if (((a % 10) + (b % 10)) < 10) {
+        const adjust = 10 - ((a % 10) + (b % 10));
+        b = Math.min(range, b + adjust);
+      }
+    }
+    
+    attempts++;
+  } while (usedQuestions.has(`${a}+${b}`) && attempts < maxAttempts);
+  
+  // 如果还是重复，添加时间戳确保唯一性
+  if (usedQuestions.has(`${a}+${b}`)) {
+    a = a + (Date.now() % 100);
+    b = b + (Date.now() % 100);
   }
+  
+  usedQuestions.add(`${a}+${b}`);
   return { a, b, operation: '+', correctAnswer: a + b, displayText: `${a} + ${b} =` };
 };
 
@@ -349,6 +381,27 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
           toast.show({ type: 'success', title: `+${expGain.total} EXP`, message: `准确率 ${accuracy}%，用时 ${totalTimeSec.toFixed(2)}s` });
         } catch {}
       }, 150);
+      
+      // 练习完成后立即同步到云端
+      setTimeout(() => {
+        try {
+          if (localStorage.getItem('mp-cloud-sync') === '1') {
+            console.log('[CloudSync] 练习完成，开始云端同步:', {
+              finalCorrect,
+              finalTotal,
+              totalTimeSec: times.reduce((s, n) => s + (Number.isFinite(n) ? n : 0), 0),
+              cloudSyncEnabled: localStorage.getItem('mp-cloud-sync')
+            });
+            const gamificationService = GamificationService.getInstance();
+            gamificationService.syncFromCloud();
+            console.log('[CloudSync] 练习完成后触发云端同步');
+          } else {
+            console.log('[CloudSync] 云端同步未启用，跳过同步');
+          }
+        } catch (error) {
+          console.error('[CloudSync] 练习完成后同步失败:', error);
+        }
+      }, 200);
     } catch {}
   };
   
@@ -513,12 +566,13 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
     
     if (newQuestions.length === 0) {
       // 使用简化的题目生成逻辑
-    for (let i = 0; i < questionCount; i++) {
-      let question: PlaySimpleQuestion;
+      const usedQuestions = new Set<string>(); // 用于去重
+      for (let i = 0; i < questionCount; i++) {
+        let question: PlaySimpleQuestion;
         if (questionType === 'borrow') {
-          question = generateBorrowSubtraction(range);
+          question = generateBorrowSubtraction(range, usedQuestions);
         } else if (questionType === 'carry') {
-        question = generateCarryAddition(range);
+          question = generateCarryAddition(range, usedQuestions);
         } else if (questionType === 'multiply') {
           // 九九乘法表范围（2-9）
           const a = Math.floor(Math.random() * 8) + 2; // 2-9
@@ -778,10 +832,10 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
         } else {
           // 默认混合模式（加减）
           if (i % 2 === 0) {
-        question = generateBorrowSubtraction(range);
-      } else {
-            question = generateCarryAddition(range);
-      }
+            question = generateBorrowSubtraction(range, usedQuestions);
+          } else {
+            question = generateCarryAddition(range, usedQuestions);
+          }
         }
       newQuestions.push(question);
       }
@@ -1159,7 +1213,7 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             const accountService = AccountService.getInstance();
             const currentAccount = accountService.getCurrentAccount();
             if (currentAccount) {
-              const passwordHash = btoa(currentAccount.name + '_password');
+              const passwordHash = btoa(encodeURIComponent(currentAccount.name + '_password'));
               CloudStore.getInstance().ensureAccount(currentAccount.name, passwordHash, currentAccount.type)
                 .then(cloudAccountId => {
                   return CloudStore.getInstance().logQuestion(cloudAccountId, {
@@ -1172,6 +1226,17 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
                 })
                 .then(() => {
                   console.log('[CloudSync] 题目日志同步成功');
+                  console.log('[CloudSync] 题目详情:', {
+                    questionText: q.displayText,
+                    userAnswer: answer,
+                    correctAnswer: q.correctAnswer,
+                    isCorrect,
+                    timeTaken: durationSec,
+                    cloudAccountId
+                  });
+                  // 立即触发gamificationService同步，确保数据一致性
+                  const gamificationService = GamificationService.getInstance();
+                  gamificationService.syncFromCloud();
                 })
                 .catch(error => {
                   console.error('[CloudSync] 题目日志同步失败:', error);
@@ -1329,7 +1394,10 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             } catch {}
             // 游戏化结算
             finalizeGamification(nextCorrect, nextTimes.length, nextTimes);
-            onFinish();
+            // 延迟调用onFinish，确保localStorage已经设置完成
+            setTimeout(() => {
+              onFinish();
+            }, 100);
           }
         } else {
           playSfx('wrong');
@@ -1421,7 +1489,10 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
             } catch {}
             // 游戏化结算
             finalizeGamification(correctCount, nextTimes.length, nextTimes);
-            onFinish();
+            // 延迟调用onFinish，确保localStorage已经设置完成
+            setTimeout(() => {
+              onFinish();
+            }, 100);
           }
           
           // 1.5秒后清除反馈
@@ -1643,6 +1714,12 @@ export const PlaySimple: React.FC<PlaySimpleProps> = ({ onFinish, onExit }) => {
       setAnsweredQuestions(prev => prev + 1);
       setCorrectCount(prev => prev + 1);
       const nextCorrect = correctCount + 1;
+      
+      // 立即给予EXP奖励并同步到云端
+      const expGain = gamification.calculateExpGain(100, durationSec * 1000, 1); // 单题100%准确率
+      gamification.addExp(expGain.total);
+      console.log('[PlaySimple] 答题正确，获得EXP:', expGain.total);
+      
       // 立即持久化
       localStorage.setItem('math-practice-answered', nextAnswered.toString());
       localStorage.setItem('math-practice-correct', nextCorrect.toString());

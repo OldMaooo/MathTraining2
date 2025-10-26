@@ -605,6 +605,7 @@ export const Review: React.FC<ReviewProps> = ({ onRestart }) => {
               <div className="text-center">
                 <div className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-1">{totalTime.toFixed(2)}s</div>
                 <div className="text-gray-600 dark:text-gray-400 text-sm">本轮总用时</div>
+                <div className="text-gray-500 dark:text-gray-500 text-xs mt-1">答题数: {answeredQuestions}</div>
               </div>
             </div>
           {/* 经验结算（总计与明细） */}

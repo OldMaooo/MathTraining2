@@ -27,12 +27,45 @@ export class AccountService {
     const accountsData = localStorage.getItem('mp-accounts');
     if (accountsData) {
       try {
-        return JSON.parse(accountsData);
+        const accounts = JSON.parse(accountsData);
+        // 迁移旧格式的账号ID到新格式
+        return this.migrateAccountIds(accounts);
       } catch {
         return [];
       }
     }
     return [];
+  }
+
+  // 迁移旧格式的账号ID到新格式
+  private migrateAccountIds(accounts: Account[]): Account[] {
+    let needsSave = false;
+    const migratedAccounts = accounts.map(account => {
+      // 检查是否是旧格式的ID（时间戳格式）
+      if (/^\d{13}[a-z0-9]+$/.test(account.id)) {
+        needsSave = true;
+        // 生成新的稳定ID
+        const newId = `user:${account.name}`;
+        console.log(`[AccountMigration] 迁移账号ID: ${account.id} -> ${newId}`);
+        return { ...account, id: newId };
+      }
+      return account;
+    });
+
+    if (needsSave) {
+      this.saveAccounts(migratedAccounts);
+      console.log('[AccountMigration] 账号ID迁移完成');
+    }
+
+    return migratedAccounts;
+  }
+
+  // 确保云端同步已启用
+  ensureCloudSyncEnabled(): void {
+    if (localStorage.getItem('mp-cloud-sync') !== '1') {
+      localStorage.setItem('mp-cloud-sync', '1');
+      console.log('[CloudSync] 自动启用云端同步');
+    }
   }
 
   // 保存账号列表
@@ -43,18 +76,27 @@ export class AccountService {
   // 创建新账号
   createAccount(name: string, type?: 'admin' | 'user'): Account {
     const accounts = this.getAccounts();
-    
+
+    // 如果已存在同名账号，直接返回，避免重复
+    const existed = accounts.find(a => a.name === name);
+    if (existed) {
+      return existed;
+    }
+
     // 自动判断账号类型：mao1986为admin，其他为user
     const accountType = type || (name === 'mao1986' ? 'admin' : 'user');
-    
+
+    // 生成跨浏览器稳定的本地ID：基于用户名
+    const stableId = `user:${name}`;
+
     const newAccount: Account = {
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      id: stableId,
       name,
       type: accountType,
       createdAt: Date.now(),
       lastActiveAt: Date.now()
     };
-    
+
     accounts.push(newAccount);
     this.saveAccounts(accounts);
     
@@ -62,7 +104,7 @@ export class AccountService {
     try {
       if (localStorage.getItem('mp-cloud-sync') === '1') {
         // 生成一个简单的密码哈希（实际应用中应该更安全）
-        const passwordHash = btoa(name + '_password');
+        const passwordHash = btoa(encodeURIComponent(name + '_password'));
         CloudStore.getInstance().ensureAccount(name, passwordHash, accountType)
           .then(cloudAccountId => {
             console.log('Account synced to cloud:', cloudAccountId);
@@ -84,18 +126,27 @@ export class AccountService {
     if (!currentId) return null;
     
     const accounts = this.getAccounts();
-    return accounts.find(account => account.id === currentId) || null;
+    const foundAccount = accounts.find(account => account.id === currentId);
+    
+    if (foundAccount) {
+      return foundAccount;
+    } else {
+      // 如果当前ID对应的账号不存在，清除无效的ID
+      console.log('[AccountService] 当前账号ID无效，清除:', currentId);
+      this.currentAccountId = null;
+      localStorage.removeItem('mp-current-account-id');
+      return null;
+    }
   }
 
-  // 获取当前账号ID
+  // 获取当前账号ID（每次都从localStorage读取，确保数据同步）
   getCurrentAccountId(): string | null {
-    if (this.currentAccountId) return this.currentAccountId;
-    
     const savedId = localStorage.getItem('mp-current-account-id');
     if (savedId) {
-      this.currentAccountId = savedId;
+      this.currentAccountId = savedId; // 更新缓存
       return savedId;
     }
+    this.currentAccountId = null;
     return null;
   }
 

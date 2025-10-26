@@ -33,24 +33,44 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
   const [showStreakRules, setShowStreakRules] = useState<boolean>(false);
 
   useEffect(() => {
+    console.log('[TopNavigation] ========== TopNavigation useEffect 开始 ==========');
     try {
       const gamificationService = GamificationService.getInstance();
       const refresh = () => {
+        console.log('[TopNavigation] ========== 开始刷新档案 ==========');
         try {
           const p = gamificationService.getUserProfile();
           console.log('[TopNavigation] profile refreshed', p);
+          console.log('[TopNavigation] 设置profile状态:', p);
           setProfile(p);
+          console.log('[TopNavigation] ========== 档案刷新完成 ==========');
         } catch (error) {
-          console.error('Error refreshing profile:', error);
+          console.error('[TopNavigation] Error refreshing profile:', error);
         }
       };
+      
+      console.log('[TopNavigation] 初始刷新档案...');
       refresh();
-      const onUpdated = () => refresh();
+      
+      const onUpdated = () => {
+        console.log('[TopNavigation] 收到 mp-profile-updated 事件，刷新档案...');
+        refresh();
+      };
       window.addEventListener('mp-profile-updated', onUpdated as any);
+      
       // 账号切换时强制刷新个人档案与今日统计
-      const onAccountChanged = () => refresh();
+      const onAccountChanged = () => {
+        console.log('[TopNavigation] 收到 mp-account-changed 事件，刷新档案...');
+        refresh();
+      };
       window.addEventListener('mp-account-changed', onAccountChanged as any);
-      return () => window.removeEventListener('mp-profile-updated', onUpdated as any);
+      
+      console.log('[TopNavigation] ========== TopNavigation useEffect 完成 ==========');
+      return () => {
+        console.log('[TopNavigation] 清理事件监听器...');
+        window.removeEventListener('mp-profile-updated', onUpdated as any);
+        window.removeEventListener('mp-account-changed', onAccountChanged as any);
+      };
     } catch (error) {
       console.error('Error in profile useEffect:', error);
     }
@@ -60,6 +80,10 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
   useEffect(() => {
     try {
       const accountService = AccountService.getInstance();
+      
+      // 确保云端同步已启用
+      accountService.ensureCloudSyncEnabled();
+      
       const current = accountService.getCurrentAccount();
       const allAccounts = accountService.getAccounts();
       const recent = accountService.getRecentAccounts();
@@ -70,16 +94,52 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
         setCurrentAccount(allAccounts[0]);
         setAccounts(allAccounts);
         setRecentAccounts(accountService.getRecentAccounts());
+        // 首次进入时尝试从云端拉取一次数据，确保跨浏览器一致
+        (async () => {
+          try {
+            if (localStorage.getItem('mp-cloud-sync') === '1') {
+              await GamificationService.getInstance().syncFromCloud();
+              console.log('[Bootstrap] 首次加载完成，已从云端同步数据');
+              window.dispatchEvent(new CustomEvent('mp-profile-updated'));
+            }
+          } catch (e) {
+            console.error('[Bootstrap] 首次云端同步失败:', e);
+          }
+        })();
       } else if (!current) {
         // 如果没有任何账号，创建默认账号
         const defaultAccount = accountService.getOrCreateDefaultAccount();
         setCurrentAccount(defaultAccount);
         setAccounts([defaultAccount]);
         setRecentAccounts([]);
+        // 首次进入时尝试从云端拉取一次数据
+        (async () => {
+          try {
+            if (localStorage.getItem('mp-cloud-sync') === '1') {
+              await GamificationService.getInstance().syncFromCloud();
+              console.log('[Bootstrap] 已为默认账号同步云端数据');
+              window.dispatchEvent(new CustomEvent('mp-profile-updated'));
+            }
+          } catch (e) {
+            console.error('[Bootstrap] 默认账号云端同步失败:', e);
+          }
+        })();
       } else {
         setCurrentAccount(current);
         setAccounts(allAccounts);
         setRecentAccounts(recent);
+        // 有当前账号时也进行一次云端拉取，保证跨浏览器一致
+        (async () => {
+          try {
+            if (localStorage.getItem('mp-cloud-sync') === '1') {
+              await GamificationService.getInstance().syncFromCloud();
+              console.log('[Bootstrap] 当前账号已同步云端数据');
+              window.dispatchEvent(new CustomEvent('mp-profile-updated'));
+            }
+          } catch (e) {
+            console.error('[Bootstrap] 当前账号云端同步失败:', e);
+          }
+        })();
       }
     } catch (error) {
       console.error('Account initialization error:', error);
@@ -150,7 +210,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
           setShowUserMenu(false);
           break;
       }
-    }, 200);
+    }, 400);
 
     // 保存超时引用
     switch (tooltipType) {
@@ -195,6 +255,38 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
           setUserMenuTimeout(null);
         }
         break;
+    }
+  };
+  
+  const handleLogout = () => {
+    try {
+      const accountService = AccountService.getInstance();
+      const curr = accountService.getCurrentAccount();
+      // 从本地账号列表移除当前账号，并清除当前账号ID
+      if (curr) {
+        const remaining = (accountService.getAccounts() || []).filter(a => a.id !== curr.id);
+        localStorage.setItem('mp-accounts', JSON.stringify(remaining));
+      }
+      localStorage.removeItem('mp-current-account-id');
+
+      // 回退到（如果剩余）第一个账号，否则创建默认账号
+      let fallback = null as any;
+      const left = AccountService.getInstance().getAccounts();
+      if (left.length > 0) {
+        fallback = left[0];
+      } else {
+        fallback = accountService.getOrCreateDefaultAccount();
+      }
+      accountService.setCurrentAccount(fallback.id);
+      setAccounts(AccountService.getInstance().getAccounts());
+      setCurrentAccount(fallback);
+      setRecentAccounts(accountService.getRecentAccounts());
+      setShowUserMenu(false);
+      // 触发账号切换事件
+      window.dispatchEvent(new CustomEvent('mp-account-changed'));
+      console.log('[Account] 已退出登录，切换到默认账号');
+    } catch (e) {
+      console.error('Logout failed:', e);
     }
   };
   
@@ -312,6 +404,19 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
       setShowAddAccountModal(false);
       setShowAccountMenu(false);
       
+      // 登录后立即从云端拉取，确保跨浏览器同步
+      (async () => {
+        try {
+          if (localStorage.getItem('mp-cloud-sync') === '1') {
+            await GamificationService.getInstance().syncFromCloud();
+            console.log('[Login] 登录后已从云端同步');
+            window.dispatchEvent(new CustomEvent('mp-profile-updated'));
+          }
+        } catch (e) {
+          console.error('[Login] 登录后云端同步失败:', e);
+        }
+      })();
+
       // 触发账号切换事件
       window.dispatchEvent(new CustomEvent('mp-account-changed'));
     }
@@ -329,17 +434,39 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
       setShowRegisterModal(false);
       setShowAccountMenu(false);
       
+      // 注册后也拉取云端数据（若同名已有云档案则复用）
+      (async () => {
+        try {
+          if (localStorage.getItem('mp-cloud-sync') === '1') {
+            await GamificationService.getInstance().syncFromCloud();
+            console.log('[Register] 注册后已从云端同步');
+            window.dispatchEvent(new CustomEvent('mp-profile-updated'));
+          }
+        } catch (e) {
+          console.error('[Register] 注册后云端同步失败:', e);
+        }
+      })();
+
       // 触发账号切换事件
       window.dispatchEvent(new CustomEvent('mp-account-changed'));
     }
   };
 
-  const handleSwitchAccount = (accountId: string) => {
+  const handleSwitchAccount = async (accountId: string) => {
     const accountService = AccountService.getInstance();
     accountService.setCurrentAccount(accountId);
     setCurrentAccount(accountService.getCurrentAccount());
     setRecentAccounts(accountService.getRecentAccounts());
     setShowAccountMenu(false);
+    
+    // 从云端同步数据
+    try {
+      const gamification = GamificationService.getInstance();
+      await gamification.syncFromCloud();
+      console.log('[AccountSwitch] 云端数据同步完成');
+    } catch (error) {
+      console.error('[AccountSwitch] 云端数据同步失败:', error);
+    }
     
     // 触发账号切换事件
     window.dispatchEvent(new CustomEvent('mp-account-changed'));
@@ -533,11 +660,11 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
 
 
             {/* 账号管理 */}
-            <div className="relative">
+            <div className="relative" onMouseEnter={() => cancelHideTooltip('user')} onMouseLeave={() => hideTooltip('user')}>
               <button
                 className="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 onMouseEnter={() => showTooltip('user')}
-                onMouseLeave={() => hideTooltip('user')}
+                onClick={() => setShowUserMenu(v => !v)}
               >
                 <span className="text-sm font-medium">{currentAccount?.name || '用户'}</span>
                 <span className="text-xs">▼</span>
@@ -652,6 +779,21 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ onNavigate }) => {
                         <span>{theme === 'light' ? '切换到深色模式' : '切换到浅色模式'}</span>
                       </div>
                     </button>
+                    
+                    {/* 退出登录 */}
+                    <button
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={handleLogout}
+                    >
+                      退出登录
+                    </button>
+                    
+                    {/* 版本号 */}
+                    <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
+                      <div className="text-xs text-gray-400 dark:text-gray-500 text-center">
+                        v1.0.0
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

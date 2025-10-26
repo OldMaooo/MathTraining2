@@ -5,13 +5,11 @@ let client: SupabaseClient | null = null;
 export function getSupabaseClient(): SupabaseClient {
   if (client) return client;
 
-  // Vite 环境变量读取
-  const url = (import.meta as any).env?.VITE_SUPABASE_URL || (window as any).__SUPABASE_URL__;
-  const anonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || (window as any).__SUPABASE_ANON_KEY__;
+  // 直接硬编码配置（临时解决方案）
+  const url = 'https://wtclpsjmbokwgwzsenxz.supabase.co';
+  const anonKey = 'sb_publishable_6siuBEqDFzw24-PvxSvoWw_ha6CJwTf';
 
-  if (!url || !anonKey) {
-    throw new Error('Supabase 未配置: 请设置 VITE_SUPABASE_URL 与 VITE_SUPABASE_ANON_KEY');
-  }
+  console.log('🔗 创建Supabase客户端:', { url, hasKey: !!anonKey });
 
   client = createClient(url, anonKey, {
     auth: {
@@ -21,6 +19,7 @@ export function getSupabaseClient(): SupabaseClient {
   });
   return client;
 }
+
 
 
 

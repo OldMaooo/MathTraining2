@@ -10,15 +10,17 @@ import { History } from './pages/History';
 import { WrongQuestions } from './pages/WrongQuestions';
 import { AddRecord } from './pages/AddRecord';
 import LearningPath from './pages/LearningPath';
-// import LevelDetail from './pages/LevelDetail';
+import LevelDetail from './pages/LevelDetail';
 import LevelResult from './pages/LevelResult';
 import ParentDashboard from './pages/ParentDashboard';
 // import { HeaderTest } from './pages/HeaderTest';
 // import { SimpleTest } from './pages/SimpleTest';
 // import { MinimalTest } from './pages/MinimalTest';
 import { TopNavigation } from './components/TopNavigation';
+import { CloudSyncDebugger } from './components/CloudSyncDebugger';
 // import { ToastContainer } from './components/ToastContainer';
 import { ThemeProvider } from './contexts/ThemeContext';
+import ErrorBoundary from './components/ErrorBoundary';
 
 type AppState = 'start' | 'play' | 'review' | 'test' | 'history' | 'wrong-questions' | 'add-record' | 'learning-path' | 'level-detail' | 'level-result' | 'parent-dashboard' | 'header-test' | 'simple-test' | 'minimal-test';
 
@@ -122,15 +124,16 @@ function App() {
   
   return (
     <ThemeProvider>
-      <div className="App">
-        <TopNavigation onNavigate={handleNavigate} />
-        {currentState === 'start' && <Start onStart={handleStart} />}
-        {currentState === 'play' && <PlaySimple onFinish={handleFinish} onExit={handleExit} />}
-        {currentState === 'review' && <Review onRestart={handleRestart} />}
-        {currentState === 'history' && <History onBack={handleBack} />}
-        {currentState === 'wrong-questions' && <WrongQuestions onBack={handleBack} />}
-        {currentState === 'add-record' && <AddRecord onBack={handleBack} />}
-        {currentState === 'learning-path' && <LearningPath />}
+      <ErrorBoundary>
+        <div className="App">
+          <TopNavigation onNavigate={handleNavigate} />
+          {currentState === 'start' && <Start onStart={handleStart} />}
+          {currentState === 'play' && <PlaySimple onFinish={handleFinish} onExit={handleExit} />}
+          {currentState === 'review' && <Review onRestart={handleRestart} />}
+          {currentState === 'history' && <History onBack={handleBack} />}
+          {currentState === 'wrong-questions' && <WrongQuestions onBack={handleBack} />}
+          {currentState === 'add-record' && <AddRecord onBack={handleBack} />}
+          {currentState === 'learning-path' && <LearningPath />}
         {/* {currentState === 'level-detail' && levelData && (
           <LevelDetail
             levelId={levelData.levelId}
@@ -161,7 +164,11 @@ function App() {
         {currentState === 'header-test' && <div>Header Test page coming soon...</div>}
         {currentState === 'simple-test' && <div>Simple Test page coming soon...</div>}
         {currentState === 'minimal-test' && <div>Minimal Test page coming soon...</div>}
-      </div>
+        </div>
+        
+        {/* 云端同步调试器 - 仅在开发模式下显示 */}
+        {process.env.NODE_ENV === 'development' && <CloudSyncDebugger />}
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }

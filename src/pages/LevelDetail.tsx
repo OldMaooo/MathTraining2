@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LearningPathService } from '../services/learningPathService';
-import { LevelConfig, LevelProgress, UnlockStatus, ParentReward } from '../types/learningPath';
+import type { LevelConfig, LevelProgress, UnlockStatus, ParentReward } from '../types/learningPath';
 
 interface LevelDetailProps {
   levelId: string;
@@ -23,11 +23,12 @@ const LevelDetail: React.FC<LevelDetailProps> = ({ levelId, onBack, onStart }) =
   }, [levelId]);
 
   const loadLevelData = () => {
-    // 获取关卡配置
-    const chapters = learningPathService.getChapters();
-    let foundLevel: LevelConfig | null = null;
-    
-    for (const chapter of chapters) {
+    try {
+      // 获取关卡配置
+      const chapters = learningPathService.getChapters();
+      let foundLevel: LevelConfig | null = null;
+      
+      for (const chapter of chapters) {
       const level = chapter.levels.find(l => l.id === levelId);
       if (level) {
         foundLevel = level;
@@ -54,6 +55,12 @@ const LevelDetail: React.FC<LevelDetailProps> = ({ levelId, onBack, onStart }) =
       } else {
         setRewardTexts({ bronze: '', silver: '', gold: '' });
       }
+    }
+    } catch (error) {
+      console.error('Failed to load level data:', error);
+      setLevelConfig(null);
+      setLevelProgress(null);
+      setUnlockStatus({ isUnlocked: false, reason: '加载失败' });
     }
   };
 

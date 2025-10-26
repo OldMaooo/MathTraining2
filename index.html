@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="./vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Tailwind (CDN for quick dev styling restore) -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <!-- Preload SFX to minimize first-play latency -->
     <!-- <link rel="preload" as="fetch" href="./sfx/correct.wav" />
     <link rel="preload" as="fetch" href="./sfx/wrong.wav" />
@@ -13,7 +15,30 @@
   </head>
   <body>
     <div id="root"></div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <script>
+      // 捕获页面早期错误到控制台与页面
+      (function(){
+        function show(msg){
+          try {
+            const pre = document.createElement('pre');
+            pre.style.cssText = 'position:fixed;left:8px;bottom:8px;max-width:90vw;max-height:40vh;overflow:auto;background:#ffeeee;color:#b00020;padding:8px 10px;border:1px solid #f5c2c7;border-radius:6px;z-index:2147483647;font:12px/1.4 monospace;white-space:pre-wrap;';
+            pre.textContent = msg;
+            document.body.appendChild(pre);
+            setTimeout(()=>pre.remove(), 8000);
+          } catch(_) {}
+        }
+        window.addEventListener('error', function(e){
+          console.error('[window.error]', e.error || e.message || e);
+          show('[window.error] ' + (e.error && e.error.stack || e.message));
+        });
+        window.addEventListener('unhandledrejection', function(e){
+          console.error('[unhandledrejection]', e.reason);
+          show('[unhandledrejection] ' + (e.reason && (e.reason.stack || e.reason.message) || String(e.reason)));
+        });
+        console.log('[boot] inline error hooks installed');
+      })();
+    </script>
     <script type="module" src="./src/main.tsx"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
   </body>
 </html>

@@ -2,543 +2,177 @@
   "chapters": [
     {
       "id": 1,
-      "name": "基础运算王国",
-      "description": "掌握10-20以内的加减法运算",
-      "difficultyRange": "10-20以内",
+      "name": "基础数感训练",
+      "description": "Level 0-1: 建立数感基础，掌握凑十法",
+      "difficultyRange": "1-18以内",
       "levels": [
         {
-          "id": "1-1",
-          "name": "加法入门",
+          "id": "level-0-basic-number-sense",
+          "name": "基础数感 (1-9)",
           "chapter": 1,
           "order": 1,
-          "content": "1+1到10+10的加法运算",
-          "questionCount": 25,
+          "content": "1-9的加减能瞬间反应，不思考",
+          "questionCount": 20,
           "difficulty": {
-            "range": "1-20",
-            "operations": ["addition"]
+            "range": "1-9",
+            "operations": ["addition", "subtraction"]
           },
           "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 2.0, "accuracy": 90 },
-            "gold": { "time": 1.5, "accuracy": 95 }
+            "bronze": { "time": 5, "accuracy": 80 },
+            "silver": { "time": 3, "accuracy": 90 },
+            "gold": { "time": 2, "accuracy": 95 }
           },
           "unlockCondition": "无"
         },
         {
-          "id": "1-2",
-          "name": "减法入门",
+          "id": "level-1-make-ten",
+          "name": "凑十基础",
           "chapter": 1,
           "order": 2,
-          "content": "10-1到20-10的减法运算",
-          "questionCount": 25,
+          "content": "掌握凑成10的组合，6-9与任一数",
+          "questionCount": 20,
           "difficulty": {
-            "range": "1-20",
-            "operations": ["subtraction"]
+            "range": "1-18",
+            "operations": ["addition"]
           },
           "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 2.0, "accuracy": 90 },
-            "gold": { "time": 1.5, "accuracy": 95 }
+            "bronze": { "time": 8, "accuracy": 80 },
+            "silver": { "time": 6, "accuracy": 90 },
+            "gold": { "time": 4, "accuracy": 95 }
           },
-          "unlockCondition": "1-1铜星"
-        },
-        {
-          "id": "1-3",
-          "name": "混合基础",
-          "chapter": 1,
-          "order": 3,
-          "content": "1-20加减混合运算",
-          "questionCount": 30,
-          "difficulty": {
-            "range": "1-20",
-            "operations": ["addition", "subtraction"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 2.5, "accuracy": 85 },
-            "gold": { "time": 2.0, "accuracy": 90 }
-          },
-          "unlockCondition": "1-2铜星"
-        },
-        {
-          "id": "1-4",
-          "name": "速度挑战",
-          "chapter": 1,
-          "order": 4,
-          "content": "1-20随机运算速度挑战",
-          "questionCount": 35,
-          "difficulty": {
-            "range": "1-20",
-            "operations": ["addition", "subtraction"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 2.0, "accuracy": 80 },
-            "gold": { "time": 1.5, "accuracy": 85 }
-          },
-          "unlockCondition": "1-3铜星"
+          "unlockCondition": "level-0-basic-number-sense银星"
         }
       ]
     },
     {
       "id": 2,
-      "name": "进位退位王国",
-      "description": "掌握20-50以内的进位加法和退位减法",
-      "difficultyRange": "20-50以内",
+      "name": "一位数运算",
+      "description": "Level 2-3: 一位数与两位数运算，掌握进位技巧",
+      "difficultyRange": "1-99以内",
       "levels": [
         {
-          "id": "2-1",
-          "name": "进位加法",
+          "id": "level-2-single-digit-no-carry",
+          "name": "一位数运算(无进位)",
           "chapter": 2,
           "order": 1,
-          "content": "6+5到25+25的进位加法",
-          "questionCount": 30,
+          "content": "一位数加两位数，不触发进位",
+          "questionCount": 20,
           "difficulty": {
-            "range": "20-50",
-            "operations": ["addition"]
+            "range": "1-99",
+            "operations": ["addition", "subtraction"]
           },
           "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 3.0, "accuracy": 90 },
-            "gold": { "time": 2.5, "accuracy": 95 }
+            "bronze": { "time": 12, "accuracy": 80 },
+            "silver": { "time": 9, "accuracy": 90 },
+            "gold": { "time": 6, "accuracy": 95 }
           },
-          "unlockCondition": "1-4铜星"
+          "unlockCondition": "level-1-make-ten银星"
         },
         {
-          "id": "2-2",
-          "name": "退位减法",
+          "id": "level-3-single-digit-with-carry",
+          "name": "一位数运算(有进位)",
           "chapter": 2,
           "order": 2,
-          "content": "11-5到50-25的退位减法",
-          "questionCount": 30,
+          "content": "熟练用凑整思维处理进位",
+          "questionCount": 20,
           "difficulty": {
-            "range": "20-50",
-            "operations": ["subtraction"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 3.0, "accuracy": 90 },
-            "gold": { "time": 2.5, "accuracy": 95 }
-          },
-          "unlockCondition": "2-1铜星"
-        },
-        {
-          "id": "2-3",
-          "name": "混合进阶",
-          "chapter": 2,
-          "order": 3,
-          "content": "1-50加减混合运算",
-          "questionCount": 40,
-          "difficulty": {
-            "range": "1-50",
+            "range": "1-99",
             "operations": ["addition", "subtraction"]
           },
           "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 2.5, "accuracy": 85 },
-            "gold": { "time": 2.0, "accuracy": 90 }
+            "bronze": { "time": 12, "accuracy": 80 },
+            "silver": { "time": 9, "accuracy": 90 },
+            "gold": { "time": 6, "accuracy": 95 }
           },
-          "unlockCondition": "2-2铜星"
-        },
-        {
-          "id": "2-4",
-          "name": "速度突破",
-          "chapter": 2,
-          "order": 4,
-          "content": "1-50随机运算速度突破",
-          "questionCount": 50,
-          "difficulty": {
-            "range": "1-50",
-            "operations": ["addition", "subtraction"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 2.0, "accuracy": 80 },
-            "gold": { "time": 1.5, "accuracy": 85 }
-          },
-          "unlockCondition": "2-3铜星"
+          "unlockCondition": "level-2-single-digit-no-carry银星"
         }
       ]
     },
     {
       "id": 3,
-      "name": "中等范围王国",
-      "description": "掌握50-100以内的大数运算",
-      "difficultyRange": "50-100以内",
+      "name": "两位数基础运算",
+      "description": "Level 4-5: 两位数加减，掌握按位合并和简单进位",
+      "difficultyRange": "1-99以内",
       "levels": [
         {
-          "id": "3-1",
-          "name": "大数加法",
+          "id": "level-4-double-digit-no-carry",
+          "name": "两位数运算(无跨十)",
           "chapter": 3,
           "order": 1,
-          "content": "25+25到50+50的大数加法",
-          "questionCount": 35,
+          "content": "两位数相加相减，个位不跨十",
+          "questionCount": 20,
           "difficulty": {
-            "range": "50-100",
-            "operations": ["addition"]
+            "range": "1-99",
+            "operations": ["addition", "subtraction"]
           },
           "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 3.5, "accuracy": 90 },
-            "gold": { "time": 3.0, "accuracy": 95 }
+            "bronze": { "time": 16, "accuracy": 80 },
+            "silver": { "time": 12, "accuracy": 90 },
+            "gold": { "time": 8, "accuracy": 95 }
           },
-          "unlockCondition": "2-4铜星"
+          "unlockCondition": "level-3-single-digit-with-carry银星"
         },
         {
-          "id": "3-2",
-          "name": "大数减法",
+          "id": "level-5-double-digit-single-carry",
+          "name": "两位数运算(单处进位)",
           "chapter": 3,
           "order": 2,
-          "content": "50-25到100-50的大数减法",
-          "questionCount": 35,
+          "content": "处理一种进位或借位，用凑整或分拆法",
+          "questionCount": 20,
           "difficulty": {
-            "range": "50-100",
-            "operations": ["subtraction"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 3.5, "accuracy": 90 },
-            "gold": { "time": 3.0, "accuracy": 95 }
-          },
-          "unlockCondition": "3-1铜星"
-        },
-        {
-          "id": "3-3",
-          "name": "混合中等",
-          "chapter": 3,
-          "order": 3,
-          "content": "1-100加减混合运算",
-          "questionCount": 45,
-          "difficulty": {
-            "range": "1-100",
+            "range": "1-99",
             "operations": ["addition", "subtraction"]
           },
           "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 3.0, "accuracy": 85 },
-            "gold": { "time": 2.5, "accuracy": 90 }
+            "bronze": { "time": 16, "accuracy": 80 },
+            "silver": { "time": 12, "accuracy": 90 },
+            "gold": { "time": 8, "accuracy": 95 }
           },
-          "unlockCondition": "3-2铜星"
-        },
-        {
-          "id": "3-4",
-          "name": "速度挑战",
-          "chapter": 3,
-          "order": 4,
-          "content": "1-100随机运算速度挑战",
-          "questionCount": 60,
-          "difficulty": {
-            "range": "1-100",
-            "operations": ["addition", "subtraction"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 2.5, "accuracy": 80 },
-            "gold": { "time": 2.0, "accuracy": 85 }
-          },
-          "unlockCondition": "3-3铜星"
+          "unlockCondition": "level-4-double-digit-no-carry银星"
         }
       ]
     },
     {
       "id": 4,
-      "name": "乘法基础王国",
-      "description": "掌握乘法表运算",
-      "difficultyRange": "乘法表",
+      "name": "高级运算技巧",
+      "description": "Level 6-7: 复杂进位和多步运算",
+      "difficultyRange": "1-199以内",
       "levels": [
         {
-          "id": "4-1",
-          "name": "2-3乘法表",
+          "id": "level-6-double-digit-multiple-carry",
+          "name": "两位数运算(多处进位)",
           "chapter": 4,
           "order": 1,
-          "content": "2×1到3×9的乘法表",
-          "questionCount": 30,
+          "content": "涉及两个位置都需处理的进位或退位",
+          "questionCount": 20,
           "difficulty": {
-            "range": "2-3乘法表",
-            "operations": ["multiplication"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 2.5, "accuracy": 95 },
-            "gold": { "time": 2.0, "accuracy": 98 }
-          },
-          "unlockCondition": "3-4铜星"
-        },
-        {
-          "id": "4-2",
-          "name": "4-5乘法表",
-          "chapter": 4,
-          "order": 2,
-          "content": "4×1到5×9的乘法表",
-          "questionCount": 30,
-          "difficulty": {
-            "range": "4-5乘法表",
-            "operations": ["multiplication"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 2.0, "accuracy": 90 },
-            "gold": { "time": 1.5, "accuracy": 95 }
-          },
-          "unlockCondition": "4-1铜星"
-        },
-        {
-          "id": "4-3",
-          "name": "6-9乘法表",
-          "chapter": 4,
-          "order": 3,
-          "content": "6×1到9×9的乘法表",
-          "questionCount": 30,
-          "difficulty": {
-            "range": "6-9乘法表",
-            "operations": ["multiplication"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 1.5, "accuracy": 85 },
-            "gold": { "time": 1.0, "accuracy": 90 }
-          },
-          "unlockCondition": "4-2铜星"
-        },
-        {
-          "id": "4-4",
-          "name": "乘法大师",
-          "chapter": 4,
-          "order": 4,
-          "content": "1-9乘法随机运算",
-          "questionCount": 50,
-          "difficulty": {
-            "range": "1-9乘法表",
-            "operations": ["multiplication"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 1.0, "accuracy": 80 },
-            "gold": { "time": 0.8, "accuracy": 85 }
-          },
-          "unlockCondition": "4-3铜星"
-        }
-      ]
-    },
-    {
-      "id": 5,
-      "name": "除法基础王国",
-      "description": "掌握除法运算",
-      "difficultyRange": "除法运算",
-      "levels": [
-        {
-          "id": "5-1",
-          "name": "简单除法",
-          "chapter": 5,
-          "order": 1,
-          "content": "2÷1到9÷3的简单除法",
-          "questionCount": 25,
-          "difficulty": {
-            "range": "简单除法",
-            "operations": ["division"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 3.0, "accuracy": 90 },
-            "gold": { "time": 2.5, "accuracy": 95 }
-          },
-          "unlockCondition": "4-4铜星"
-        },
-        {
-          "id": "5-2",
-          "name": "中等除法",
-          "chapter": 5,
-          "order": 2,
-          "content": "12÷3到45÷9的中等除法",
-          "questionCount": 30,
-          "difficulty": {
-            "range": "中等除法",
-            "operations": ["division"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 2.5, "accuracy": 85 },
-            "gold": { "time": 2.0, "accuracy": 90 }
-          },
-          "unlockCondition": "5-1铜星"
-        },
-        {
-          "id": "5-3",
-          "name": "复杂除法",
-          "chapter": 5,
-          "order": 3,
-          "content": "36÷6到81÷9的复杂除法",
-          "questionCount": 35,
-          "difficulty": {
-            "range": "复杂除法",
-            "operations": ["division"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 2.0, "accuracy": 80 },
-            "gold": { "time": 1.5, "accuracy": 85 }
-          },
-          "unlockCondition": "5-2铜星"
-        },
-        {
-          "id": "5-4",
-          "name": "除法大师",
-          "chapter": 5,
-          "order": 4,
-          "content": "随机除法运算",
-          "questionCount": 40,
-          "difficulty": {
-            "range": "随机除法",
-            "operations": ["division"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 1.5, "accuracy": 75 },
-            "gold": { "time": 1.0, "accuracy": 80 }
-          },
-          "unlockCondition": "5-3铜星"
-        }
-      ]
-    },
-    {
-      "id": 6,
-      "name": "高级范围王国",
-      "description": "掌握100-200以内的高级运算",
-      "difficultyRange": "100-200以内",
-      "levels": [
-        {
-          "id": "6-1",
-          "name": "高级加法",
-          "chapter": 6,
-          "order": 1,
-          "content": "50+50到100+100的高级加法",
-          "questionCount": 40,
-          "difficulty": {
-            "range": "100-200",
-            "operations": ["addition"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 4.0, "accuracy": 90 },
-            "gold": { "time": 3.5, "accuracy": 95 }
-          },
-          "unlockCondition": "5-4铜星"
-        },
-        {
-          "id": "6-2",
-          "name": "高级减法",
-          "chapter": 6,
-          "order": 2,
-          "content": "100-50到200-100的高级减法",
-          "questionCount": 40,
-          "difficulty": {
-            "range": "100-200",
-            "operations": ["subtraction"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 4.0, "accuracy": 90 },
-            "gold": { "time": 3.5, "accuracy": 95 }
-          },
-          "unlockCondition": "6-1铜星"
-        },
-        {
-          "id": "6-3",
-          "name": "混合高级",
-          "chapter": 6,
-          "order": 3,
-          "content": "1-200加减混合高级运算",
-          "questionCount": 50,
-          "difficulty": {
-            "range": "1-200",
+            "range": "1-199",
             "operations": ["addition", "subtraction"]
           },
           "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 3.5, "accuracy": 85 },
-            "gold": { "time": 3.0, "accuracy": 90 }
+            "bronze": { "time": 20, "accuracy": 80 },
+            "silver": { "time": 15, "accuracy": 90 },
+            "gold": { "time": 10, "accuracy": 95 }
           },
-          "unlockCondition": "6-2铜星"
+          "unlockCondition": "level-5-double-digit-single-carry银星"
         },
         {
-          "id": "6-4",
-          "name": "极速挑战",
-          "chapter": 6,
-          "order": 4,
-          "content": "1-200随机运算极速挑战",
-          "questionCount": 70,
+          "id": "level-7-triple-operations",
+          "name": "三数运算/混合步骤",
+          "chapter": 4,
+          "order": 2,
+          "content": "心算三项相加或加减混合，提高耐干扰能力",
+          "questionCount": 15,
           "difficulty": {
-            "range": "1-200",
+            "range": "1-199",
             "operations": ["addition", "subtraction"]
           },
           "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 3.0, "accuracy": 80 },
-            "gold": { "time": 2.5, "accuracy": 85 }
+            "bronze": { "time": 30, "accuracy": 80 },
+            "silver": { "time": 24, "accuracy": 90 },
+            "gold": { "time": 18, "accuracy": 95 }
           },
-          "unlockCondition": "6-3铜星"
-        }
-      ]
-    },
-    {
-      "id": 7,
-      "name": "综合挑战王国",
-      "description": "综合四则运算挑战",
-      "difficultyRange": "综合运算",
-      "levels": [
-        {
-          "id": "7-1",
-          "name": "四则混合",
-          "chapter": 7,
-          "order": 1,
-          "content": "加减乘除随机混合运算",
-          "questionCount": 50,
-          "difficulty": {
-            "range": "综合运算",
-            "operations": ["addition", "subtraction", "multiplication", "division"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 2.5, "accuracy": 80 },
-            "gold": { "time": 2.0, "accuracy": 85 }
-          },
-          "unlockCondition": "6-4铜星"
-        },
-        {
-          "id": "7-2",
-          "name": "极速挑战",
-          "chapter": 7,
-          "order": 2,
-          "content": "1-200所有运算极速挑战",
-          "questionCount": 80,
-          "difficulty": {
-            "range": "1-200综合",
-            "operations": ["addition", "subtraction", "multiplication", "division"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 2.0, "accuracy": 75 },
-            "gold": { "time": 1.5, "accuracy": 80 }
-          },
-          "unlockCondition": "7-1铜星"
-        },
-        {
-          "id": "7-3",
-          "name": "大师级",
-          "chapter": 7,
-          "order": 3,
-          "content": "完全随机大师级挑战",
-          "questionCount": 100,
-          "difficulty": {
-            "range": "完全随机",
-            "operations": ["addition", "subtraction", "multiplication", "division"]
-          },
-          "requirements": {
-            "bronze": { "type": "personal_progress", "value": 20 },
-            "silver": { "time": 1.5, "accuracy": 70 },
-            "gold": { "time": 1.0, "accuracy": 75 }
-          },
-          "unlockCondition": "7-2铜星"
+          "unlockCondition": "level-6-double-digit-multiple-carry银星"
         }
       ]
     }

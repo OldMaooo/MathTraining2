@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>云端同步测试工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 云端同步测试工具</h1>
+        <p>这个工具帮助你测试和调试云端同步功能。</p>
+
+        <div class="test-section">
+            <h3>📊 当前状态检查</h3>
+            <button onclick="checkCurrentStatus()">检查当前状态</button>
+            <button onclick="checkLocalStorage()">检查本地存储</button>
+            <button onclick="checkCloudSync()">检查云端同步</button>
+            <div id="status-log" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔄 同步测试</h3>
+            <button onclick="testSyncToCloud()">测试同步到云端</button>
+            <button onclick="testSyncFromCloud()">测试从云端同步</button>
+            <button onclick="testFullSync()">测试完整同步</button>
+            <div id="sync-log" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📝 题目日志测试</h3>
+            <button onclick="addTestQuestionLog()">添加测试题目日志</button>
+            <button onclick="checkQuestionLogs()">检查题目日志</button>
+            <button onclick="syncQuestionLogs()">同步题目日志</button>
+            <div id="question-log" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧹 清理工具</h3>
+            <button onclick="clearLogs()">清空日志</button>
+            <button onclick="clearLocalStorage()">清空本地存储</button>
+            <button onclick="resetCloudSync()">重置云端同步</button>
+            <div id="cleanup-log" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        // 日志函数
+        function log(elementId, message, type = 'info') {
+            const logElement = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            logElement.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        // 检查当前状态
+        function checkCurrentStatus() {
+            log('status-log', '=== 检查当前状态 ===', 'info');
+            
+            // 检查云端同步状态
+            const cloudSyncEnabled = localStorage.getItem('mp-cloud-sync');
+            log('status-log', `云端同步状态: ${cloudSyncEnabled === '1' ? '启用' : '未启用'}`, cloudSyncEnabled === '1' ? 'success' : 'warning');
+            
+            // 检查当前账户
+            const currentAccount = localStorage.getItem('mp-current-account');
+            if (currentAccount) {
+                const account = JSON.parse(currentAccount);
+                log('status-log', `当前账户: ${account.name} (${account.id})`, 'info');
+            } else {
+                log('status-log', '没有当前账户', 'error');
+            }
+            
+            // 检查题目日志
+            const questionLogs = JSON.parse(localStorage.getItem('mp-question-logs') || '[]');
+            log('status-log', `本地题目日志数量: ${questionLogs.length}`, 'info');
+            
+            // 检查今日统计
+            const dailyStats = JSON.parse(localStorage.getItem('mp-daily-stats') || '{}');
+            log('status-log', `今日统计: ${JSON.stringify(dailyStats, null, 2)}`, 'info');
+        }
+
+        // 检查本地存储
+        function checkLocalStorage() {
+            log('status-log', '=== 检查本地存储 ===', 'info');
+            
+            const keys = [
+                'mp-cloud-sync',
+                'mp-accounts', 
+                'mp-current-account',
+                'mp-profile',
+                'mp-question-logs',
+                'mp-daily-stats',
+                'mp-wrong-questions'
+            ];
+            
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    try {
+                        const parsed = JSON.parse(value);
+                        if (Array.isArray(parsed)) {
+                            log('status-log', `${key}: ${parsed.length} 项`, 'info');
+                        } else if (typeof parsed === 'object') {
+                            log('status-log', `${key}: ${Object.keys(parsed).length} 个属性`, 'info');
+                        } else {
+                            log('status-log', `${key}: ${parsed}`, 'info');
+                        }
+                    } catch {
+                        log('status-log', `${key}: ${value}`, 'info');
+                    }
+                } else {
+                    log('status-log', `${key}: 不存在`, 'warning');
+                }
+            });
+        }
+
+        // 检查云端同步
+        async function checkCloudSync() {
+            log('status-log', '=== 检查云端同步 ===', 'info');
+            
+            try {
+                // 这里需要实际的云端同步检查逻辑
+                log('status-log', '云端同步检查功能需要在实际应用中测试', 'warning');
+            } catch (error) {
+                log('status-log', `云端同步检查失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 添加测试题目日志
+        function addTestQuestionLog() {
+            log('question-log', '=== 添加测试题目日志 ===', 'info');
+            
+            const questionLogs = JSON.parse(localStorage.getItem('mp-question-logs') || '[]');
+            const testLog = {
+                a: Math.floor(Math.random() * 10) + 1,
+                b: Math.floor(Math.random() * 10) + 1,
+                operation: '+',
+                correctAnswer: 0,
+                userAnswer: Math.floor(Math.random() * 20) + 1,
+                isCorrect: Math.random() > 0.5,
+                timeTaken: Math.random() * 10 + 1,
+                displayText: '',
+                timestamp: Date.now()
+            };
+            
+            testLog.correctAnswer = testLog.a + testLog.b;
+            testLog.displayText = `${testLog.a} + ${testLog.b} = ?`;
+            
+            questionLogs.push(testLog);
+            localStorage.setItem('mp-question-logs', JSON.stringify(questionLogs));
+            
+            log('question-log', `添加测试日志: ${testLog.displayText}`, 'success');
+            log('question-log', `用户答案: ${testLog.userAnswer}, 正确答案: ${testLog.correctAnswer}, 是否正确: ${testLog.isCorrect}`, 'info');
+        }
+
+        // 检查题目日志
+        function checkQuestionLogs() {
+            log('question-log', '=== 检查题目日志 ===', 'info');
+            
+            const questionLogs = JSON.parse(localStorage.getItem('mp-question-logs') || '[]');
+            log('question-log', `题目日志总数: ${questionLogs.length}`, 'info');
+            
+            if (questionLogs.length > 0) {
+                const latest = questionLogs[questionLogs.length - 1];
+                log('question-log', `最新日志: ${JSON.stringify(latest, null, 2)}`, 'info');
+                
+                // 统计今日题目
+                const today = new Date().toISOString().split('T')[0];
+                const todayLogs = questionLogs.filter(log => {
+                    const logDate = new Date(log.timestamp || Date.now()).toISOString().split('T')[0];
+                    return logDate === today;
+                });
+                
+                log('question-log', `今日题目数量: ${todayLogs.length}`, 'info');
+                
+                const correctCount = todayLogs.filter(log => log.isCorrect).length;
+                log('question-log', `今日正确数量: ${correctCount}`, 'info');
+            }
+        }
+
+        // 同步题目日志
+        async function syncQuestionLogs() {
+            log('question-log', '=== 同步题目日志 ===', 'info');
+            log('question-log', '题目日志同步功能需要在实际应用中测试', 'warning');
+        }
+
+        // 测试同步到云端
+        async function testSyncToCloud() {
+            log('sync-log', '=== 测试同步到云端 ===', 'info');
+            log('sync-log', '同步到云端功能需要在实际应用中测试', 'warning');
+        }
+
+        // 测试从云端同步
+        async function testSyncFromCloud() {
+            log('sync-log', '=== 测试从云端同步 ===', 'info');
+            log('sync-log', '从云端同步功能需要在实际应用中测试', 'warning');
+        }
+
+        // 测试完整同步
+        async function testFullSync() {
+            log('sync-log', '=== 测试完整同步 ===', 'info');
+            log('sync-log', '完整同步功能需要在实际应用中测试', 'warning');
+        }
+
+        // 清空日志
+        function clearLogs() {
+            document.getElementById('status-log').innerHTML = '';
+            document.getElementById('sync-log').innerHTML = '';
+            document.getElementById('question-log').innerHTML = '';
+            document.getElementById('cleanup-log').innerHTML = '';
+            log('cleanup-log', '所有日志已清空', 'success');
+        }
+
+        // 清空本地存储
+        function clearLocalStorage() {
+            if (confirm('确定要清空所有本地存储数据吗？这将删除所有账户、题目日志和统计信息！')) {
+                const keys = [
+                    'mp-cloud-sync',
+                    'mp-accounts', 
+                    'mp-current-account',
+                    'mp-profile',
+                    'mp-question-logs',
+                    'mp-daily-stats',
+                    'mp-wrong-questions'
+                ];
+                
+                keys.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                
+                log('cleanup-log', '本地存储已清空', 'success');
+            }
+        }
+
+        // 重置云端同步
+        function resetCloudSync() {
+            localStorage.setItem('mp-cloud-sync', '1');
+            log('cleanup-log', '云端同步已重置为启用状态', 'success');
+        }
+
+        // 页面加载时自动检查状态
+        window.onload = function() {
+            log('status-log', '云端同步测试工具已加载', 'success');
+            checkCurrentStatus();
+        };
+    </script>
+</body>
+</html>
